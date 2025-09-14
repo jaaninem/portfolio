@@ -13,3 +13,5 @@
 
 
 * \[ ] mettre les photos 
+* \[ ] changer bio
+* \[ ] changer typo
