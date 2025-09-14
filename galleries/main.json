@@ -6,45 +6,65 @@
 		"images":
 		[
 			{
-				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_01.jpg",
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_01.jpg",
 				"description": ""
 			},
 			{
-				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_02.jpg",
-				"description": "Golden hour in the Alps"
-			},
-			{
-				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_03.jpg",
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_02.jpg",
 				"description": ""
 			},
 			{
-				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_04.jpg",
-				"description": "Golden hour in the Alps"
-			},
-			{
-				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_05.jpg",
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_03.jpg",
 				"description": ""
 			},
 			{
-				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_06.jpg",
-				"description": "Golden hour in the Alps"
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_04.jpg",
+				"description": ""
 			},
 			{
-				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_07.jpg",
-				"description": "Golden hour in the Alps"
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_05.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_06.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_07.jpg",
+				"description": ""
 			}
 		]
 	},
 	{
-		"project-title": "Ocean Waves",
-		"year": "1990",
+		"project-title": "Discorde",
+		"year": "2024",
 		"location": null,
 		"images":
 		[
 			{
-				"image_path": "waves.jpg",
-				"description": "Pacific coast at sunset"
-			}
+				"image_path": "discord/2324_S2_Agbayani_Janine_MiseEnScene_01.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "discord/2324_S2_Agbayani_Janine_MiseEnScene_02.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "discord/2324_S2_Agbayani_Janine_MiseEnScene_03.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "discord/2324_S2_Agbayani_Janine_MiseEnScene_04.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "discord/2324_S2_Agbayani_Janine_MiseEnScene_05.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "discord/2324_S2_Agbayani_Janine_MiseEnScene_06.jpg",
+				"description": ""
+			},
 		]
 	},
 	{
