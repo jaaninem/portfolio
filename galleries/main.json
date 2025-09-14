@@ -1,18 +1,38 @@
 [
 	{
-		"project-title": "Mountain Sunrise",
-		"year": "2020",
-		"location": "Thonon",
+		"project-title": "Dunes",
+		"year": "2025",
+		"location": null,
 		"images":
 		[
 			{
-				"image_path": "unsplash.jpg",
-				"description": "Ouuais"
+				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_01.jpg",
+				"description": ""
 			},
 			{
-				"image_path": "sunrise.jpg",
+				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_02.jpg",
 				"description": "Golden hour in the Alps"
-			}
+			},
+			{
+				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_03.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_04.jpg",
+				"description": "Golden hour in the Alps"
+			},
+			{
+				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_05.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_06.jpg",
+				"description": "Golden hour in the Alps"
+			},
+			{
+				"image_path": "2425_S2_Agbayani_Janine_MiseEnScene_07.jpg",
+				"description": "Golden hour in the Alps"
+			},
 		]
 	},
 	{
