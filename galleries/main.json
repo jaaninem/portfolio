@@ -1,0 +1,42 @@
+[
+	{
+		"project-title": "Mountain Sunrise",
+		"year": "2020",
+		"location": "Thonon",
+		"images":
+		[
+			{
+				"image_path": "unsplash.jpg",
+				"description": "Ouuais"
+			},
+			{
+				"image_path": "sunrise.jpg",
+				"description": "Golden hour in the Alps"
+			}
+		]
+	},
+	{
+		"project-title": "Ocean Waves",
+		"year": "1990",
+		"location": null,
+		"images":
+		[
+			{
+				"image_path": "waves.jpg",
+				"description": "Pacific coast at sunset"
+			}
+		]
+	},
+	{
+		"project-title": "Urban Architecture",
+		"year": "2006",
+		"location": "FR",
+		"images":
+		[
+			{
+				"image_path": "skyline.jpg",
+				"description": "Modern city skyline"
+			}
+		]
+	}
+]

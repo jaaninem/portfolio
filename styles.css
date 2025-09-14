@@ -1,0 +1,464 @@
+:root{
+    --project-title-height: 80px; /* Height of each project title */
+    --project-title-font-size: 25px; /* Font size for project titles */
+    --gallery-container-width: 25vw; /* Width of the gallery container */
+    --gallery-container-mobile-height: 40dvh; /* Height of the gallery container on mobile */
+    --gallery-container-about-width: 60vw; /* Width of the gallery container when in about mode */
+    --gallery-container-about-mobile-height: 100dvh; /* Height of the gallery container when in about mode on mobile */
+    --gallery-container-about-transition: width 0.5s ease-in-out;
+    --gallery-container-about-transition-mobile: height 0.5s ease-in-out;
+    --gallery-elements-animation: fadeIn 0.5s ease;
+}
+
+@font-face {
+	font-family: EBGaramond;
+	src:url("./fonts/EBGaramond/EBGaramond12-Regular.otf")
+}
+
+/* styles.css */
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-snap-type: none;
+    max-height: 100vh; /* Safety check */
+}
+
+body {
+    font-family: "Courier New", Arial, sans-serif;
+    background-color: #f8f8f8;
+    /* allow vertical scrolling in child containers */
+    overflow: hidden;
+    /* overflow-y: visible; */
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hidden{
+    display: none;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden; /* disable native scroll */
+    width: 100%;
+}
+
+.main-component {
+    overflow: hidden; /* disable native scroll */
+}
+
+/* Gallery Container (Left Sidebar) */
+#gallery-container {
+    width: var(--gallery-container-width); /* Increase from 45% to 60% for more horizontal space */
+    min-width: var(--gallery-container-width);
+    overflow-x: hidden;
+    overflow-y: hidden;
+    position: relative;
+    padding: 0px 0px;
+    box-shadow: 3px 0 10px rgba(0,0,0,0.2);
+    margin-top: 0%;
+    display: flex;
+    align-items: center;
+    resize: horizontal;
+    transition: var(--gallery-container-about-transition);
+    touch-action: none; /* Prevent browser scrolling */
+    -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
+    overflow: hidden;
+}
+
+/*
+.gallery-wrapper {
+    width: 100%;
+    height: 600px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+*/
+
+/*
+.gallery {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    width: 100%;
+    padding: 0px 0; 
+    transform-origin: center;
+}*/
+
+
+
+#project-gallery {
+    position:relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-items: center;
+    align-items: center;
+    min-width: 100%; /* Ensure full width */
+    margin-top: calc(2 * var(--project-title-height));/* - var(--project-title-font-size) / 2);*/ /* Add some space at the top */
+    /*transform: 0.2s ease-out;*/
+}
+
+.project-container {
+  padding-left: 35px;
+  display: flex;
+  align-items: center; /* Align items vertically */
+  justify-content: center; /* Center items horizontally */
+  position: relative;
+  width: 100%; /* Ensure full width */
+  animation: var(--gallery-elements-animation);
+}
+
+
+.project-title {
+    padding: 0 0px; /* Remove vertical padding */
+    margin: 0;
+    color: black;
+    font-size: var(--project-title-font-size);
+    text-align: center;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+    cursor: pointer;
+    height: var(--project-title-height);
+    display: flex;
+    align-items: center; /* Ensure text is vertically centered */
+    justify-content: center;
+    width: 50%; /* Make wider */
+    position: relative; /* Add this for proper stacking */
+    z-index: 10; /* Ensure text is above the cursor line */
+    /* Add this margin to shift titles down slightly */
+    margin-top: 0px;
+    overflow-wrap: break-word; /* Break long words if needed */
+}
+.project-title:hover {
+    color: darkgrey;
+    font-size: calc(1.2 * var(--project-title-font-size)); /* Slightly larger on hover */
+
+}
+.project-title.active {
+    font-size: calc(1.5 * var(--project-title-font-size)); /* Make active item larger */
+    color: purple;
+    font-weight: bold;
+    opacity: 1;
+    width: 70%; /* Active titles can use full width */
+}
+
+.additional-infos {
+  display: flex;
+  position: absolute;
+  left: 30px;
+  flex-direction: column;
+  gap: 0px; /* Space between stacked location/year */
+  min-width: 0; /* Allow column to shrink below content width */
+  align-items: center;
+  transform: translateX(-50%) rotate(-90deg) /* Center vertically */
+}
+
+/*
+.scroll-indicator {
+    width: 10%;
+}
+*/
+
+#about-text{
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 40px 30px;
+    box-sizing: border-box;
+    font-family: EBGaramond, serif;
+    font-size: 1.15rem;
+    color: #222;
+    overflow-y: auto;
+    animation: var(--gallery-elements-animation);
+    /*animation: aboutTextLineFadeIn 1s steps(1, end) forwards; */
+}
+
+/*
+
+@keyframes aboutTextLineFadeIn {
+    0% {
+        opacity: 0;
+    }
+    1% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 1;
+    }
+}*/
+#about-text {
+    animation: aboutTextLineFadeIn 1s steps(10, end) forwards;
+}
+#about-text p {
+    opacity: 0;
+    animation: aboutTextLineFadeIn 1s steps(1, end) forwards;
+    animation-delay: calc(var(--line) * 0.2s);
+}
+
+#name, #about, #back {
+    bottom: 18px;
+    position: absolute;
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: #222;
+    font-family: EBGaramond, serif;
+    letter-spacing: 0.5px;
+    z-index: 100;
+    animation: var(--gallery-elements-animation);
+    transition: var(--gallery-elements-about-transition);
+}
+
+#name {
+    left: 28px;
+}
+#about, #back {
+    right: 28px;
+}
+
+
+/* Main Display Area */
+#main-display {
+    /* fix right‐panel width so it never resizes with the image */
+    /*flex: 0 0 70%;        /* don’t grow or shrink, always 40% of container */
+    /*max-width: 800px;     /* optional cap */
+    width: calc(100vw - var(--gallery-container-width)); /* fill remaining space */
+    min-width: 30%;           /* always 60% of container */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 7% 5%;
+    background: #fff;
+    position: relative;
+    overflow: hidden; 
+}
+
+/* ensure the image container fills the panel */
+.image-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* scale the photo to fit its container */
+#featured-image {
+    max-width: 100%;    /* fill panel width */
+    max-height: 100%;   /* fill panel height */
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    border-radius: 1px;
+    animation: fadeIn 2s ease; /* Add fade-in animation */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#photo-info {
+    text-align: center;
+    margin-top: 10px;
+    color: white;
+    max-width: 80%;
+}
+
+#photo-title {
+    display: none;
+    font-size: 2.2rem;
+    margin-bottom: 10px;
+    color: #ae00ff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+#photo-description {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: black;/* #ddd;*/
+}
+
+
+.navigation {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.nav-btn {
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    opacity: 1;
+    transform: scale(1);
+}
+
+.nav-btn.hidden_btn {
+    opacity: 0;
+    transform: scale(0.5);
+    pointer-events: none;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+.nav-btn i {
+    font-size: 30px;
+    color: #2c3e50;
+}
+
+.counter {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 25px;
+    border-radius: 30px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+/* Scrollbar Styling 
+#gallery-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+#gallery-container::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+#gallery-container::-webkit-scrollbar-thumb {
+    background: #ff6b6b;
+    border-radius: 4px;
+}
+    */
+
+#cursor-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    /* Adjust from 50% to exactly align with project titles */
+    top: calc(50% - 1px); 
+    transform: translateY(-50%);
+    height: 2px;
+    background-color: #ae00ff;
+    pointer-events: none;
+    z-index: 5; /* Ensure it's below text but above background */
+}
+
+/* About Section */
+
+#gallery-container.about-active {
+    width: var(--gallery-container-about-width);
+    transition: var(--gallery-container-about-transition);
+}
+
+/*
+#name.hidden, #about.hidden, #back.hidden, #about-text.hidden {
+    opacity: 0; 
+    transition: var(--gallery-elements-about-transition);
+    display: none;
+}
+*/
+
+#project-gallery.hidden {
+    display: none;
+}
+
+.navigation.hidden {
+    display: none;
+}
+
+
+/* Mobile Layout */ 
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column-reverse;
+        max-height: 100vh; /* Allow height to adjust based on content */
+    }
+
+    .main-component {
+        resize: none;
+        overflow: hidden;
+    }
+    
+    #gallery-container {
+        width: 100%;
+        height: var(--gallery-container-mobile-height);
+        resize: none;
+    }
+
+    #main-display {
+        width: 100%;
+        height: calc(100dvh - var(--gallery-container-mobile-height));
+        padding: 20% 8%;
+    }
+    /*
+    .gallery {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+    
+    .main-display {
+        height: calc(100vh - 150px);
+        padding: 20px;
+    }
+*/
+
+    #featured-image {
+        max-height: 60vh;
+    }
+    
+    #photo-title {
+        font-size: 1.8rem;
+    }
+
+    #gallery-container.about-active {
+        width: 100%;
+        height: var(--gallery-container-about-mobile-height);
+        transition: var(--gallery-container-about-transition-mobile);
+    }
+
+    #main-display.about-active {
+        height: 0;
+        transition: var(--gallery-container-about-transition-mobile);
+        padding: 0 0;
+    }
+
+    /*
+    #photo-info{
+        display:none;
+    }*/
+}
