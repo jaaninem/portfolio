@@ -2,6 +2,10 @@
 	font-family: "SilkaMono";
 	src:url("../fonts/Silka Mono/SilkaMono-Regular.otf") format("opentype");
 }
+@font-face {
+	font-family: "SilkaMono-Bold";
+	src:url("../fonts/Silka Mono/SilkaMono-Bold.otf") format("opentype");
+}
 
 
 :root{
@@ -124,11 +128,11 @@ body {
 .project-title {
     padding: 0 0px; /* Remove vertical padding */
     margin: 0;
-    color: black;
+    color: grey;
     font-size: var(--project-title-font-size);
     text-align: center;
     transition: all 0.3s ease;
-    opacity: 0.7;
+    opacity: 0.3;
     cursor: pointer;
     height: var(--project-title-height);
     display: flex;
@@ -140,6 +144,7 @@ body {
     /* Add this margin to shift titles down slightly */
     margin-top: 0px;
     overflow-wrap: break-word; /* Break long words if needed */
+	letter-spacing: 0px;
 }
 .project-title:hover {
     color: darkgrey;
@@ -148,7 +153,7 @@ body {
 }
 .project-title.active {
     font-size: calc(1.5 * var(--project-title-font-size)); /* Make active item larger */
-    color: purple;
+    color: black;
     font-weight: bold;
     opacity: 1;
     width: 70%; /* Active titles can use full width */
@@ -163,6 +168,10 @@ body {
   min-width: 0; /* Allow column to shrink below content width */
   align-items: center;
   transform: translateX(-50%) rotate(-90deg) /* Center vertically */
+}
+
+.bottom-text {
+	
 }
 
 /*
@@ -215,8 +224,8 @@ body {
     font-size: 0.95rem;
     font-weight: bold;
     color: #222;
-    font-family: "SilkaMono-Bold", sans-serif; /*--var(--font-family), serif;*/
-    letter-spacing: 0.5px;
+    font-family: "SilkaMono", sans-serif; /*--var(--font-family), serif;*/
+    letter-spacing: 1px;
     z-index: 100;
     animation: var(--gallery-elements-animation);
     transition: var(--gallery-elements-about-transition);
@@ -317,11 +326,11 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 20px;
+    padding: 0 5px;
 }
 
 .nav-btn {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.0);
     border: none;
     width: 70px;
     height: 70px;
@@ -331,7 +340,7 @@ body {
     align-items: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0px 0px rgba(0, 0, 0, 0.2);
     opacity: 1;
     transform: scale(1);
 }
@@ -343,8 +352,8 @@ body {
 }
 
 .nav-btn:hover {
-    background: rgba(255, 255, 255, 1);
-    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0);
+    transform: scale(1.4);
 }
 
 .nav-btn i {
@@ -357,13 +366,17 @@ body {
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(50, 50, 50, .2);
     color: white;
-    padding: 10px 25px;
-    border-radius: 30px;
-    font-size: 1.3rem;
+    padding: 5px 20px;
+    border-radius: 25px;
+    font-size: 1rem;
     font-weight: 600;
     letter-spacing: 1px;
+}
+
+.project-year {
+	
 }
 
 /* Scrollbar Styling 
@@ -386,12 +399,13 @@ body {
     left: 0;
     right: 0;
     /* Adjust from 50% to exactly align with project titles */
-    top: calc(50% - 1px); 
+    top: calc(45% - 1px); 
     transform: translateY(-50%);
     height: 2px;
-    background-color: #ae00ff;
+    background-color: rgba(0, 64, 255, 0.6);
     pointer-events: none;
-    z-index: 5; /* Ensure it's below text but above background */
+    z-index: 0; /* Ensure it's below text but above background */
+
 }
 
 /* About Section */

@@ -9,6 +9,7 @@
 
   * \[ ] swipe left and featured photo
   * \[ ] flou en bas gallery pour pas overlap textes
+  * \[ ] changer taille photos, scroll -> 2/3 photo 1/3 scroll
 
 
 
@@ -17,6 +18,6 @@
 * \[x] changer typo
 
 * \[ ]  new formatting bio (hyperlien, retour à la ligne) et end text
-* \[ ] changer taille flèches et galery counter
+* \[ ] changer taille flèches et gallery counter
 * \[ ] ajouter embedded videos
 * \[ ] refaire ajustements lignes + couleur
