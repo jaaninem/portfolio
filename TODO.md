@@ -18,6 +18,7 @@
 * \[x] changer typo
 
 * \[ ]  new formatting bio (hyperlien, retour à la ligne) et end text
-* \[ ] changer taille flèches et gallery counter
+* \[x] changer taille flèches et gallery counter
 * \[ ] ajouter embedded videos
-* \[ ] refaire ajustements lignes + couleur
+* \[ ] refaire ajustements lignes sur tous devices
+* \[ ] animation sur about et back
