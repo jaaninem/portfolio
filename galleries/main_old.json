@@ -2,20 +2,48 @@
 	{
 		"project-title": "AXE-X",
 		"year": "2026",
-		"location": "avec Valentin Meghit",
+		"location": avec Valentin Meghit,
 		"images":
 		[
 			{
-				"image_path": "diplome_val_*.jpg"
+				"image_path": "diplome_val_01.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "diplome_val_02.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "diplome_val_03.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "diplome_val_04.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "diplome_val_05.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "diplome_val_06.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "diplome_val_07.jpg",
+				"description": ""
+			},
+			{
+				"image_path": "diplome_val_08.jpg",
+				"description": ""
 			}
-
 		]
 	},
 	[
 	{
 		"project-title": "LOBI",
 		"year": "2026",
-		"location": "avec Léa Perrelet",
+		"location": avec Léa Perrelet,
 		"images":
 		[
 			{
@@ -147,7 +175,7 @@
 				"description": ""
 			}
 		]
-	},
+	}
 	{
 		"project-title": "Dunes",
 		"year": "2025",
