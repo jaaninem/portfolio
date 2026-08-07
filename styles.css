@@ -1,3 +1,9 @@
+@font-face {
+	font-family: "Aeonik";
+	src:url("fonts/Aeonik/Aeonik-Regular.ttf") format("truetype");
+}
+
+
 :root{
     --project-title-height: 80px; /* Height of each project title */
     --project-title-font-size: 25px; /* Font size for project titles */
@@ -8,12 +14,9 @@
     --gallery-container-about-transition: width 0.5s ease-in-out;
     --gallery-container-about-transition-mobile: height 0.5s ease-in-out;
     --gallery-elements-animation: fadeIn 0.5s ease;
+	/*--font-family: "Aeonik", sans-serif;*/
 }
 
-@font-face {
-	font-family: EBGaramond;
-	src:url("./fonts/EBGaramond/EBGaramond12-Regular.otf")
-}
 
 /* styles.css */
 /* Reset and Base Styles */
@@ -26,7 +29,7 @@
 }
 
 body {
-    font-family: "Courier New", Arial, sans-serif;
+    font-family: "Aeonik", sans-serif; /*, --var(--font-family) "Courier New", Arial, sans-serif; */
     background-color: #f8f8f8;
     /* allow vertical scrolling in child containers */
     overflow: hidden;
@@ -176,7 +179,7 @@ body {
     height: 100%;
     padding: 40px 30px;
     box-sizing: border-box;
-    font-family: EBGaramond, serif;
+    font-family: "Aeonik", sans-serif;/*--var(--font-family), serif; */
     font-size: 1.15rem;
     color: #222;
     overflow-y: auto;
@@ -212,7 +215,7 @@ body {
     font-size: 0.95rem;
     font-weight: bold;
     color: #222;
-    font-family: EBGaramond, serif;
+    font-family: "Aeonik", sans-serif; /*--var(--font-family), serif;*/
     letter-spacing: 0.5px;
     z-index: 100;
     animation: var(--gallery-elements-animation);
