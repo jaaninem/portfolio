@@ -39,6 +39,7 @@ body {
     overflow: hidden;
     /* overflow-y: visible; */
     min-height: 100vh;
+    min-height: 100dvh; /* iOS Safari: track the dynamic (collapsing toolbar) height */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -52,6 +53,7 @@ body {
     display: flex;
     flex-direction: row;
     height: 100vh;
+    height: 100dvh; /* iOS Safari: match the visible viewport height */
     overflow: hidden; /* disable native scroll */
     width: 100%;
 }
@@ -219,7 +221,7 @@ body {
 }
 
 #name, #about, #back {
-    bottom: 18px;
+    bottom: calc(18px + env(safe-area-inset-bottom)); /* keep clear of the iOS home indicator */
     position: absolute;
     font-size: 0.95rem;
     font-weight: bold;
@@ -363,7 +365,7 @@ body {
 
 .counter {
     position: absolute;
-    bottom: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom)); /* keep clear of the iOS home indicator */
     left: 50%;
     transform: translateX(-50%);
     background: rgba(50, 50, 50, .2);
