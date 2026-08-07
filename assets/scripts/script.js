@@ -286,8 +286,12 @@ document.addEventListener('DOMContentLoaded', () => {
         function updateProject() {
 
             let image_index = imageIndices[project_index] || 0; 
-            const totalImages = projects[project_index].images.length;
+            const project = projects[project_index];
+            const totalImages = project.images.length;
+            const hasEndText = !!(project['end-text']);
+            const totalSlides = totalImages + (hasEndText ? 1 : 0);
             const featuredImg = document.getElementById('featured-image');
+            const endTextElem = document.getElementById('project-end-text');
             /*const photoTitle = document.getElementById('photo-title');*/
             const imageDesc = document.getElementById('photo-description');
 
@@ -343,9 +347,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Show next image
+            // Show next image (or the end-text slide)
             function showNextImage() {
-                if (image_index < totalImages - 1) {
+                const maxIndex = hasEndText ? totalImages : totalImages - 1;
+                if (image_index < maxIndex) {
                     image_index += 1;
                     updateImage();
                 }
@@ -355,12 +360,22 @@ document.addEventListener('DOMContentLoaded', () => {
             function updateImage(){
                 // Update the featured display
                 const project = projects[project_index];
-                const image = project.images[image_index];
-                if (project) {
-                    console.log('Selected project:', project);
-                    featuredImg.src = `assets/photos/${image.image_path}`;
-                    /*featuredImg.alt = project['project-title'];*/
-                    imageDesc.textContent = image.description || '';
+                // show the end-text slide instead of an image on the last slide
+                const onEndText = hasEndText && image_index === totalImages;
+                if (onEndText) {
+                    featuredImg.style.display = 'none';
+                    endTextElem.classList.remove('hidden');
+                    endTextElem.textContent = project['end-text'];
+                } else {
+                    featuredImg.style.display = '';
+                    endTextElem.classList.add('hidden');
+                    const image = project.images[image_index];
+                    if (project) {
+                        console.log('Selected project:', project);
+                        featuredImg.src = `assets/photos/${image.image_path}`;
+                        /*featuredImg.alt = project['project-title'];*/
+                        imageDesc.textContent = image.description || '';
+                    }
                 }
                 updateCounter();
                 updateButtonVisibility();
@@ -422,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             function updateCounter() {
                 imageIndices[project_index] = image_index; // Update the index for the current project
-                imageCounter.textContent = `${image_index + 1} / ${totalImages}`;
+                imageCounter.textContent = `${image_index + 1} / ${totalSlides}`;
             }
             // Update button visibility based on current index
             function updateButtonVisibility() {
@@ -432,8 +447,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     prevBtn.classList.remove('hidden_btn');
                 }
-                // Hide right button if at last image
-                if(image_index === totalImages - 1) {
+                // Hide right button if at last image (or on the end-text slide)
+                const lastIndex = hasEndText ? totalImages : totalImages - 1;
+                if(image_index === lastIndex) {
                     nextBtn.classList.add('hidden_btn');
                 } else {
                     nextBtn.classList.remove('hidden_btn');

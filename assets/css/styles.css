@@ -294,6 +294,20 @@ body {
     color: black;/* #ddd;*/
 }
 
+/* End-of-project text slide */
+#project-end-text {
+    max-width: 70%;
+    max-height: 100%;
+    overflow-y: auto;
+    text-align: center;
+    font-family: "Aeonik", sans-serif;
+    font-size: 1.3rem;
+    line-height: 1.7;
+    color: #222;
+    animation: fadeIn 0.5s ease;
+    white-space: pre-wrap;
+}
+
 
 .navigation {
     position: absolute;
