@@ -13,5 +13,10 @@
 
 
 * \[ ] mettre les photos 
-* \[ ] changer bio
-* \[ ] changer typo
+* \[x] changer bio
+* \[x] changer typo
+
+* \[ ]  new formatting bio (hyperlien, retour à la ligne) et end text
+* \[ ] changer taille flèches et galery counter
+* \[ ] ajouter embedded videos
+* \[ ] refaire ajustements lignes + couleur

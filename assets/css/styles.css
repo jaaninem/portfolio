@@ -1,6 +1,6 @@
 @font-face {
 	font-family: "SilkaMono";
-	src:url("fonts/SilkaMono/SilkaMono-Regular.ttf") format("truetype");
+	src:url("../fonts/Silka Mono/SilkaMono-Regular.otf") format("opentype");
 }
 
 
@@ -215,7 +215,7 @@ body {
     font-size: 0.95rem;
     font-weight: bold;
     color: #222;
-    font-family: "SilkaMono", sans-serif; /*--var(--font-family), serif;*/
+    font-family: "SilkaMono-Bold", sans-serif; /*--var(--font-family), serif;*/
     letter-spacing: 0.5px;
     z-index: 100;
     animation: var(--gallery-elements-animation);
