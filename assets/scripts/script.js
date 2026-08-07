@@ -1,6 +1,44 @@
-console.log("gang"); // Debugging log to check if script is loaded
-
 const projectHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--project-title-height"));
+
+// Convert a glob pattern ('*', '?') into a RegExp
+function globToRegExp(pattern) {
+    const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+    const regex = escaped.replace(/\*/g, '.*').replace(/\?/g, '.');
+    return new RegExp(`^${regex}$`);
+}
+
+// Resolve a project's image paths against the manifest list.
+// Glob patterns ('*', '?') are expanded to every matching file, and literal
+// basenames without a folder are resolved to their full relative path.
+function expandProjectImages(project, availableFiles) {
+    const expanded = [];
+    for (const image of project.images) {
+        const pattern = image.image_path;
+        const hasGlob = pattern.includes('*') || pattern.includes('?');
+        if (hasGlob) {
+            // match the full relative path, or the basename when the pattern has no folder
+            const regex = globToRegExp(pattern);
+            const matches = availableFiles.filter(file =>
+                regex.test(file) || regex.test(file.split('/').pop())
+            );
+            matches.forEach(file => expanded.push({ image_path: file }));
+            continue;
+        }
+        if (availableFiles.includes(pattern)) {
+            expanded.push(image);
+            continue;
+        }
+        // literal basename without a folder: use the matching file if unique
+        const basename = pattern.split('/').pop();
+        const matches = availableFiles.filter(file => file.split('/').pop() === basename);
+        if (pattern === basename && matches.length === 1) {
+            expanded.push({ image_path: matches[0] });
+            continue;
+        }
+        expanded.push(image);
+    }
+    return expanded;
+}
 
 
 // script.js
@@ -12,15 +50,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const projectGallery = document.getElementById('project-gallery');   
 
     // Load photo data
-    fetch('galleries/main.json')
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-        })
-        .then(projects => {
+    // also fetch the manifest of available images to expand '*' glob patterns
+    Promise.all([
+        fetch('galleries/main.json')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            }),
+        fetch('assets/photos/manifest.json')
+            .then(response => response.ok ? response.json() : [])
+            .catch(() => [])
+    ])
+        .then(([projects, availableFiles]) => {
             if (!projects || !Array.isArray(projects)) {
                 throw new Error('Invalid projects data');
             }
+            // Expand any '*' glob patterns in image paths before rendering
+            projects = projects.map(project => ({ ...project, images: expandProjectImages(project, availableFiles) }));
             initGallery(projects);
         })
         .catch(error => {
@@ -314,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('Selected project:', project);
                     featuredImg.src = `assets/photos/${image.image_path}`;
                     /*featuredImg.alt = project['project-title'];*/
-                    imageDesc.textContent = image.description;
+                    imageDesc.textContent = image.description || '';
                 }
                 updateCounter();
                 updateButtonVisibility();
@@ -435,6 +481,5 @@ function displayError() {
     const featuredImg = document.getElementById('featured-image');
     featuredImg.alt = 'Error loading image';
     
-    document.getElementById('photo-title').textContent = 'Error';
     document.getElementById('photo-description').textContent = 'Could not load photos. Please check your connection.';
 }

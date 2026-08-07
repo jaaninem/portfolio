@@ -11,7 +11,6 @@
 
 		]
 	},
-	[
 	{
 		"project-title": "LOBI",
 		"year": "2026",
@@ -19,36 +18,25 @@
 		"images":
 		[
 			{
-				"image_path": "diplome_lea_01.jpg",
-				"description": ""
+				"image_path": "diplome_lea_01.jpg"
 			},
 			{
-				"image_path": "diplome_lea_02.jpg",
-				"description": ""
+				"image_path": "diplome_lea_02.jpg"
 			},
 			{
-				"image_path": "diplome_lea_03.jpg",
-				"description": ""
+				"image_path": "diplome_lea_03.jpg"
 			},
 			{
-				"image_path": "diplome_lea_04.jpg",
-				"description": ""
+				"image_path": "diplome_lea_04.jpg"
 			},
 			{
-				"image_path": "diplome_lea_05.jpg",
-				"description": ""
+				"image_path": "diplome_lea_05.jpg"
 			},
 			{
-				"image_path": "diplome_lea_06.jpg",
-				"description": ""
+				"image_path": "diplome_lea_06.jpg"
 			},
 			{
-				"image_path": "diplome_lea_07.jpg",
-				"description": ""
-			},
-			{
-				"image_path": "diplome_lea_08.jpg",
-				"description": ""
+				"image_path": "diplome_lea_07.jpg"
 			}
 		]
 	},
@@ -59,92 +47,70 @@
 		"images":
 		[
 			{
-				"image_path": "tapout_01.jpg",
-				"description": ""
+				"image_path": "tapout_01.jpg"
 			},
 			{
-				"image_path": "tapout_02.jpg",
-				"description": ""
+				"image_path": "tapout_02.jpg"
 			},
 			{
-				"image_path": "tapout_03.jpg",
-				"description": ""
+				"image_path": "tapout_03.jpg"
 			},
 			{
-				"image_path": "tapout_04.jpg",
-				"description": ""
+				"image_path": "tapout_04.jpg"
 			},
 			{
-				"image_path": "tapout_05.jpg",
-				"description": ""
+				"image_path": "tapout_05.jpg"
 			},
 			{
-				"image_path": "tapout_06.jpg",
-				"description": ""
+				"image_path": "tapout_06.jpg"
 			},
 			{
-				"image_path": "tapout_07.jpg",
-				"description": ""
+				"image_path": "tapout_07.jpg"
 			},
 			{
-				"image_path": "tapout_08.jpg",
-				"description": ""
+				"image_path": "tapout_08.jpg"
 			},
 			{
-				"image_path": "tapout_09.jpg",
-				"description": ""
+				"image_path": "tapout_09.jpg"
 			},
 			{
-				"image_path": "tapout_10.jpg",
-				"description": ""
+				"image_path": "tapout_10.jpg"
 			},
 			{
-				"image_path": "tapout_11.jpg",
-				"description": ""
+				"image_path": "tapout_11.jpg"
 			},
 			{
-				"image_path": "tapout_12.jpg",
-				"description": ""
+				"image_path": "tapout_12.jpg"
 			},
 			{
-				"image_path": "tapout_13.jpg",
-				"description": ""
+				"image_path": "tapout_13.jpg"
 			},
 			{
-				"image_path": "tapout_14.jpg",
-				"description": ""
+				"image_path": "tapout_14.jpg"
 			},
 			{
-				"image_path": "tapout_15.jpg",
-				"description": ""
+				"image_path": "tapout_15.jpg"
 			},
 			{
-				"image_path": "tapout_16.jpg",
-				"description": ""
+				"image_path": "tapout_16.jpg"
 			},
 			{
-				"image_path": "tapout_17.jpg",
-				"description": ""
+				"image_path": "tapout_17.jpg"
 			},
 			{
-				"image_path": "tapout_18.jpg",
-				"description": ""
-			},
-						{
-				"image_path": "tapout_19.jpg",
-				"description": ""
+				"image_path": "tapout_18.jpg"
 			},
 			{
-				"image_path": "tapout_20.jpg",
-				"description": ""
+				"image_path": "tapout_19.jpg"
 			},
 			{
-				"image_path": "tapout_21.jpg",
-				"description": ""
+				"image_path": "tapout_20.jpg"
 			},
 			{
-				"image_path": "tapout_22.jpg",
-				"description": ""
+				"image_path": "tapout_21.jpg"
+			},
+			{
+				"image_path": "tapout_22.jpg"
 			}
 		]
 	},
@@ -155,32 +121,25 @@
 		"images":
 		[
 			{
-				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_03.jpg",
-				"description": ""
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_03.jpg"
 			},
 			{
-				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_02.jpg",
-				"description": ""
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_02.jpg"
 			},
 			{
-				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_01.jpg",
-				"description": ""
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_01.jpg"
 			},
 			{
-				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_04.jpg",
-				"description": ""
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_04.jpg"
 			},
 			{
-				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_05.jpg",
-				"description": ""
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_05.jpg"
 			},
 			{
-				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_06.jpg",
-				"description": ""
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_06.jpg"
 			},
 			{
-				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_07.jpg",
-				"description": ""
+				"image_path": "Dunes/2425_S2_Agbayani_Janine_MiseEnScene_07.jpg"
 			}
 		]
 	}

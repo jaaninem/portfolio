@@ -1,5 +1,6 @@
 from PIL import Image
 import os
+import json
 import argparse
 
 # Configuration
@@ -57,6 +58,30 @@ def generate_thumbnails(photo_dir=PHOTO_DIR, thumb_dir=THUMB_DIR, thumb_width=TH
                 else:
                     print(f"Thumbnail exists: {thumb_path}")
 
+def generate_manifest(photo_dir=PHOTO_DIR):
+    """
+    Generate a JSON manifest listing every image under the photo directory.
+    The browser uses it to expand '*' glob patterns in gallery image paths.
+    """
+    # Supported image formats
+    img_exts = ('.jpg', '.jpeg', '.png', '.gif', '.webp')
+
+    files = []
+    for root, _, filenames in os.walk(photo_dir):
+        for filename in filenames:
+            if filename.lower().endswith(img_exts):
+                # Relative path, normalized to forward slashes for the browser
+                rel_path = os.path.relpath(os.path.join(root, filename), photo_dir)
+                files.append(rel_path.replace(os.sep, '/'))
+
+    # Sort so glob expansion order is deterministic
+    files.sort()
+
+    manifest_path = os.path.join(photo_dir, 'manifest.json')
+    with open(manifest_path, 'w') as f:
+        json.dump(files, f, indent='\t')
+    print(f"Created manifest: {manifest_path} ({len(files)} files)")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate image thumbnails')
     parser.add_argument('--photo-dir', default=PHOTO_DIR, help='Photo directory path')
@@ -70,3 +95,5 @@ if __name__ == "__main__":
         thumb_dir=args.thumb_dir,
         thumb_width=args.width
     )
+
+    generate_manifest(photo_dir=args.photo_dir)
