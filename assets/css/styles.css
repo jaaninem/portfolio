@@ -10,7 +10,7 @@
 
 :root{
     --project-title-height: 60px; /* Height of each project title */
-    --project-title-font-size: 32.5px; /* Font size for project titles */
+    --project-title-font-size: 45px; /* Font size for project titles */
     --gallery-container-width: 25vw; /* Width of the gallery container */
     --gallery-container-mobile-height: 40dvh; /* Height of the gallery container on mobile */
     --gallery-container-about-width: 60vw; /* Width of the gallery container when in about mode */
