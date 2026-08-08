@@ -156,7 +156,9 @@ body {
     display: flex;
     align-items: center; /* Ensure text is vertically centered */
     justify-content: center;
-    width: 50%; /* Make wider */
+    width: max-content; /* size to the text, only wrap when out of room */
+    max-width: 100%; /* cap so very long titles still wrap instead of overflowing */
+    text-wrap: balance; /* balance lines nicely if wrapping does happen */
     position: relative; /* Add this for proper stacking */
     z-index: 10; /* Ensure text is above the cursor line */
     -webkit-backface-visibility: hidden; /* Safari: force GPU rasterization to avoid blurry scaled text */
