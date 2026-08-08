@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function projectTransitionAnimation(position, newIndex){
-            projectGallery.style.transition = 'transform 0.2s ease-out';
+            projectGallery.style.transition = 'transform 0.12s ease-out';
             projectGallery.style.transform = `translateY(${-position}px)`;
             if (newIndex !== project_index) {
                 project_index = newIndex;

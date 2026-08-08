@@ -134,7 +134,7 @@ body {
     color: grey;
     font-size: var(--project-title-font-size);
     text-align: center;
-    transition: color 0.25s ease, opacity 0.25s ease, transform 0.25s ease; /* only compositor-friendly properties */
+    transition: color 0.15s ease-out, opacity 0.15s ease-out, transform 0.15s ease-out; /* only compositor-friendly properties */
     opacity: 0.3;
     cursor: pointer;
     height: var(--project-title-height);
@@ -144,6 +144,9 @@ body {
     width: 50%; /* Make wider */
     position: relative; /* Add this for proper stacking */
     z-index: 10; /* Ensure text is above the cursor line */
+    -webkit-backface-visibility: hidden; /* Safari: force GPU rasterization to avoid blurry scaled text */
+    backface-visibility: hidden;
+    will-change: transform;
     /* Add this margin to shift titles down slightly */
     margin-top: 0px;
     overflow-wrap: break-word; /* Break long words if needed */
@@ -160,7 +163,7 @@ body {
     color: black;
     font-weight: bold;
     opacity: 1;
-    transform: scale(1.4); /* Make active item larger */
+    transform: scale(1.3); /* Make active item larger */
 }
 
 .additional-infos {
