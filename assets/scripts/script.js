@@ -442,7 +442,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 */
 
-                mainDisplay.addEventListener('dblclick', () => {
+                mainDisplay.addEventListener('dblclick', (e) => {
+                    if (e.target.closest('.nav-btn')) return; // double-clicking the arrows must not toggle fullscreen
                     if (!document.fullscreenElement) {
                         enterFullscreen();
                     } else {
