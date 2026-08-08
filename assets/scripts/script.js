@@ -190,101 +190,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize the first project
         updateProject();
 
-        const minSwipeDistance = 0; // Minimum distance to consider a swipe
+        const scrollSpeed = 0.075; // Adjust this for scroll sensitivity (desktop wheel)
 
-        // or galleryWrapper
-        // Add these variables to track touch state
-        let touchStartY = 0;
-        let isTouchActive = false;
-        const scrollSpeed = 0.075; // Adjust this for scroll sensitivity
-        const mobileScrollMultiplier = 1; // Adjust this for mobile scroll sensitivity
-
-        // Drag state for smooth 1:1 touch scrolling (coalesced with requestAnimationFrame)
-        let lastTouchY = 0;
-        let pendingDelta = 0;
-        let scrollRaf = null;
-        let dragVelocity = 0;
-        let lastMoveTime = 0;
-        const dragThreshold = 10; // px of movement before a touch becomes a drag
-        let isDragActive = false; // false = still a tap, must not scroll or snap
-        let touchMoveTotal = 0;
-
-        function scrollBounds() {
-            const additionalSpace = projectHeight / 2; // Additional space to scroll past the last project
-            return {
-                min: -additionalSpace,
-                max: (totalProjects - 1) * projectHeight + additionalSpace
-            };
-        }
-
-        // Current visual scroll offset of the gallery (positive = project index * height)
-        function readVisualPosition() {
-            const matrix = new DOMMatrixReadOnly(getComputedStyle(projectGallery).transform);
-            return -matrix.m42;
-        }
-
-        // Apply a finger delta to the scroll position (no CSS transition while dragging)
-        function applyDrag(deltaY) {
-            const { min, max } = scrollBounds();
-            currentPosition = Math.min(max, Math.max(min, currentPosition + deltaY));
-            const newIndex = Math.min(
-                Math.max(Math.round(currentPosition / projectHeight), 0),
-                totalProjects - 1
-            );
-            projectGallery.style.transform = `translateY(${-currentPosition}px)`;
-            if (newIndex !== project_index) {
-                project_index = newIndex;
-                updateProject();
-            }
-        }
-
-        // Flush accumulated drag movement on the next animation frame
-        function flushDrag() {
-            scrollRaf = null;
-            if (pendingDelta !== 0) {
-                const delta = pendingDelta;
-                pendingDelta = 0;
-                applyDrag(delta);
-            }
-        }
-
-        // End the touch: cancel rAF, apply a velocity-based fling, then snap to a project.
-        // Pure taps (below the drag threshold) must NOT change the selection.
-        function endDrag() {
-            isTouchActive = false;
-            if (scrollRaf != null) {
-                cancelAnimationFrame(scrollRaf);
-                scrollRaf = null;
-            }
-            if (pendingDelta !== 0) {
-                applyDrag(pendingDelta);
-                pendingDelta = 0;
-            }
-
-            if (!isDragActive) {
-                // It was a tap, not a drag: don't change the selection.
-                // Re-apply the snap so any ongoing animation finishes and the
-                // list rests exactly on the selected project. The title's click
-                // event (still delivered since we never preventDefault'd) selects.
-                currentPosition = project_index * projectHeight;
-                projectTransitionAnimation(currentPosition, project_index);
-                return;
-            }
-
-            // Real drag: fling for a fixed duration based on finger velocity, then snap
-            const flingMs = 220;
-            const { min, max } = scrollBounds();
-            const targetPosition = Math.min(
-                max,
-                Math.max(min, currentPosition + dragVelocity * flingMs)
-            );
-            const targetIndex = Math.min(
-                Math.max(Math.round(targetPosition / projectHeight), 0),
-                totalProjects - 1
-            );
-            currentPosition = targetIndex * projectHeight;
-            projectTransitionAnimation(currentPosition, targetIndex);
-        }
+        // Gallery swipe: any vertical swipe switches to the next / previous project,
+        // regardless of the distance (predictable: one project per swipe).
+        let swipeStartX = 0;
+        let swipeStartY = 0;
+        let swipeMoved = false;
 
         // Wheel event (desktop)
         galleryContainer.addEventListener('wheel', (e) => {
@@ -292,61 +204,54 @@ document.addEventListener('DOMContentLoaded', () => {
             handleScroll(e.deltaY);
         });
 
-        // Touch events (mobile) - 1:1 drag with rAF coalescing, tap/drag threshold,
-        // and snap on release
+        // Touch events (mobile) - a swipe always switches exactly one project
         galleryContainer.addEventListener('touchstart', (e) => {
             if (e.touches.length > 0) {
-                touchStartY = e.touches[0].clientY;
-                lastTouchY = e.touches[0].clientY;
-                isTouchActive = true;
-                isDragActive = false;
-                touchMoveTotal = 0;
-                pendingDelta = 0;
-                dragVelocity = 0;
-                lastMoveTime = performance.now();
-                // Resync from the current visual position so a new touch starts where
-                // the list actually is (no jump if a snap was still animating)
-                currentPosition = readVisualPosition();
-                projectGallery.style.transition = 'none'; // no transition while dragging
+                swipeStartX = e.touches[0].clientX;
+                swipeStartY = e.touches[0].clientY;
+                swipeMoved = false;
             }
         });
 
         galleryContainer.addEventListener('touchmove', (e) => {
-            if (!isTouchActive) return;
-
-            const touchY = e.touches[0].clientY;
-            const deltaY = (lastTouchY - touchY) * mobileScrollMultiplier; // Inverted for natural scroll direction
-            lastTouchY = touchY;
-            touchMoveTotal += deltaY;
-
-            // Don't scroll until the finger has moved enough to be a drag.
-            // Below the threshold this is still a tap: no preventDefault, so the
-            // browser still fires a click on the title (tap selects it).
-            if (!isDragActive) {
-                if (Math.abs(touchMoveTotal) < dragThreshold) return;
-                isDragActive = true;
-                return; // absorb the movement up to the threshold (no jump)
+            if (e.touches.length === 0) return;
+            const dx = e.touches[0].clientX - swipeStartX;
+            const dy = e.touches[0].clientY - swipeStartY;
+            // Past a small tap threshold this is a swipe: suppress the title click
+            if (!swipeMoved && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+                swipeMoved = true;
             }
-            e.preventDefault();
-
-            const now = performance.now();
-            const dt = now - lastMoveTime;
-            lastMoveTime = now;
-            dragVelocity = dt > 0 ? deltaY / dt : 0; // px per ms
-
-            pendingDelta += deltaY;
-            if (scrollRaf == null) {
-                scrollRaf = requestAnimationFrame(flushDrag);
+            if (swipeMoved) {
+                e.preventDefault();
             }
         }, { passive: false });
 
-        galleryContainer.addEventListener('touchend', () => {
-            endDrag();
+        galleryContainer.addEventListener('touchend', (e) => {
+            if (!swipeMoved) return; // a tap: let the title's click select it
+            const dx = e.changedTouches[0].clientX - swipeStartX;
+            const dy = e.changedTouches[0].clientY - swipeStartY;
+            const threshold = 30; // px, minimum distance for a swipe
+            // Only vertical, dominant swipes switch projects
+            if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > threshold) {
+                if (dy < 0) {
+                    swipeToProject(project_index + 1); // finger up -> next
+                } else {
+                    swipeToProject(project_index - 1); // finger down -> previous
+                }
+            }
         });
 
         galleryContainer.addEventListener('touchcancel', () => {
-            endDrag();
+            // nothing to do; the touch was cancelled
         });
+
+        // Switch to an adjacent project (clamped to the list bounds)
+        function swipeToProject(index) {
+            const nextIndex = Math.min(Math.max(index, 0), totalProjects - 1);
+            if (nextIndex !== project_index) {
+                projectTransition(nextIndex);
+            }
+        }
 
         // Unified scroll handler (desktop wheel: stepped movement, snaps via projectTransitionAnimation)
         function handleScroll(deltaY) {
