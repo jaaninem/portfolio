@@ -147,6 +147,7 @@ body {
     padding: 0 0px; /* Remove vertical padding */
     margin: 0;
     color: grey;
+    font-weight: bold;
     font-size: var(--project-title-font-size);
     text-align: center;
     transition: color 0.15s ease-out, opacity 0.15s ease-out, transform 0.15s ease-out; /* only compositor-friendly properties */
