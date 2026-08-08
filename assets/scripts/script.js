@@ -151,6 +151,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Horizontal swipe on the featured image (touch)
+        // Bound once, so it always targets the current project via imageNav hooks.
+        // Declared before updateProject() so the hooks can be assigned there.
+        let imageNavNext = null;
+        let imageNavPrev = null;
+        let touchStartX = 0;
+        let touchStartY2 = 0;
+        let isImageTouch = false;
+
+        mainDisplay.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY2 = e.touches[0].clientY;
+                isImageTouch = true;
+            }
+        }, { passive: true });
+
+        mainDisplay.addEventListener('touchend', (e) => {
+            if (!isImageTouch) return;
+            isImageTouch = false;
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY2;
+            const threshold = 50; // px
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+                if (dx < 0) {
+                    imageNavNext && imageNavNext(); // swipe left -> next
+                } else {
+                    imageNavPrev && imageNavPrev(); // swipe right -> prev
+                }
+            }
+        });
+
         // Initialize the first project
         updateProject();
 
@@ -355,7 +387,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateImage();
                 }
             }
-            
+            // Keep the touch-swipe hooks pointing at this project's navigation
+            imageNavNext = showNextImage;
+            imageNavPrev = showPrevImage;
 
             function updateImage(){
                 // Update the featured display

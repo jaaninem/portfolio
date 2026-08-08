@@ -279,7 +279,8 @@ body {
     padding: 7% 5%;
     background: #fff;
     position: relative;
-    overflow: hidden; 
+    overflow: hidden;
+    touch-action: none; /* Let horizontal swipes on the image change photos */
 }
 
 /* ensure the image container fills the panel */
