@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function projectTransitionAnimation(position, newIndex){
-            projectGallery.style.transition = 'transform 0.12s ease-out';
+            projectGallery.style.transition = 'transform 0.25s cubic-bezier(0.22, 0.61, 0.36, 1)';
             projectGallery.style.transform = `translateY(${-position}px)`;
             if (newIndex !== project_index) {
                 project_index = newIndex;
@@ -159,6 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let touchStartX = 0;
         let touchStartY2 = 0;
         let isImageTouch = false;
+
+        // AbortControllers to dedupe listeners added per project render / image update
+        let projectEventController = null;
+        let imageEventController = null;
 
         mainDisplay.addEventListener('touchstart', (e) => {
             if (e.touches.length > 0) {
@@ -195,40 +199,118 @@ document.addEventListener('DOMContentLoaded', () => {
         const scrollSpeed = 0.075; // Adjust this for scroll sensitivity
         const mobileScrollMultiplier = 1; // Adjust this for mobile scroll sensitivity
 
+        // Drag state for smooth 1:1 touch scrolling (coalesced with requestAnimationFrame)
+        let lastTouchY = 0;
+        let pendingDelta = 0;
+        let scrollRaf = null;
+        let dragVelocity = 0;
+        let lastMoveTime = 0;
+
+        function scrollBounds() {
+            const additionalSpace = projectHeight / 2; // Additional space to scroll past the last project
+            return {
+                min: -additionalSpace,
+                max: (totalProjects - 1) * projectHeight + additionalSpace
+            };
+        }
+
+        // Apply a finger delta to the scroll position (no CSS transition while dragging)
+        function applyDrag(deltaY) {
+            const { min, max } = scrollBounds();
+            currentPosition = Math.min(max, Math.max(min, currentPosition + deltaY));
+            const newIndex = Math.min(
+                Math.max(Math.round(currentPosition / projectHeight), 0),
+                totalProjects - 1
+            );
+            projectGallery.style.transform = `translateY(${-currentPosition}px)`;
+            if (newIndex !== project_index) {
+                project_index = newIndex;
+                updateProject();
+            }
+        }
+
+        // Flush accumulated drag movement on the next animation frame
+        function flushDrag() {
+            scrollRaf = null;
+            if (pendingDelta !== 0) {
+                const delta = pendingDelta;
+                pendingDelta = 0;
+                applyDrag(delta);
+            }
+        }
+
+        // End the drag: cancel rAF, apply a velocity-based fling, then snap to a project
+        function endDrag() {
+            isTouchActive = false;
+            if (scrollRaf != null) {
+                cancelAnimationFrame(scrollRaf);
+                scrollRaf = null;
+            }
+            if (pendingDelta !== 0) {
+                applyDrag(pendingDelta);
+                pendingDelta = 0;
+            }
+            // Fling: keep gliding for a fixed duration based on finger velocity
+            const flingMs = 220;
+            const { min, max } = scrollBounds();
+            const targetPosition = Math.min(
+                max,
+                Math.max(min, currentPosition + dragVelocity * flingMs)
+            );
+            const targetIndex = Math.min(
+                Math.max(Math.round(targetPosition / projectHeight), 0),
+                totalProjects - 1
+            );
+            projectTransitionAnimation(targetIndex * projectHeight, targetIndex);
+        }
+
         // Wheel event (desktop)
         galleryContainer.addEventListener('wheel', (e) => {
             e.preventDefault();
             handleScroll(e.deltaY);
         });
 
-        // Touch events (mobile)
+        // Touch events (mobile) - 1:1 drag with rAF coalescing and snap on release
         galleryContainer.addEventListener('touchstart', (e) => {
             if (e.touches.length > 0) {
                 touchStartY = e.touches[0].clientY;
+                lastTouchY = e.touches[0].clientY;
                 isTouchActive = true;
+                pendingDelta = 0;
+                dragVelocity = 0;
+                lastMoveTime = performance.now();
+                projectGallery.style.transition = 'none'; // no transition while dragging
             }
         });
 
         galleryContainer.addEventListener('touchmove', (e) => {
             if (!isTouchActive) return;
             e.preventDefault();
-            
+
             const touchY = e.touches[0].clientY;
-            const deltaY = touchStartY - touchY; // Inverted for natural scroll direction
-            touchStartY = touchY;
-            
-            handleScroll(deltaY * mobileScrollMultiplier);
+            const deltaY = (lastTouchY - touchY) * mobileScrollMultiplier; // Inverted for natural scroll direction
+            lastTouchY = touchY;
+
+            const now = performance.now();
+            const dt = now - lastMoveTime;
+            lastMoveTime = now;
+            dragVelocity = dt > 0 ? deltaY / dt : 0; // px per ms
+
+            pendingDelta += deltaY;
+            if (scrollRaf == null) {
+                scrollRaf = requestAnimationFrame(flushDrag);
+            }
         }, { passive: false });
 
         galleryContainer.addEventListener('touchend', () => {
-            isTouchActive = false;
+            endDrag();
         });
 
         galleryContainer.addEventListener('touchcancel', () => {
-            isTouchActive = false;
+            endDrag();
         });
 
-        // Unified scroll handler
+        // Unified scroll handler (desktop wheel: stepped movement, snaps via projectTransitionAnimation)
         function handleScroll(deltaY) {
 
             const additionalSpace = projectHeight / 2; // Additional space to scroll past the last project
@@ -316,6 +398,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function updateProject() {
+            // Replace listeners from the previous project render so none stack up
+            if (projectEventController) projectEventController.abort();
+            projectEventController = new AbortController();
+            const projectSignal = projectEventController.signal;
 
             let image_index = imageIndices[project_index] || 0; 
             const project = projects[project_index];
@@ -345,8 +431,8 @@ document.addEventListener('DOMContentLoaded', () => {
             updateImage();
 
             // Event listeners for buttons
-            prevBtn.addEventListener('click', showPrevImage);
-            nextBtn.addEventListener('click', showNextImage);
+            prevBtn.addEventListener('click', showPrevImage, { signal: projectSignal });
+            nextBtn.addEventListener('click', showNextImage, { signal: projectSignal });
             
             // Keyboard navigation
             document.addEventListener('keydown', (e) => {
@@ -355,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (e.key === 'ArrowRight') {
                     showNextImage();
                 }
-            });
+            }, { signal: projectSignal });
 
             let wheelDelta = 0;
             mainDisplay.addEventListener('wheel', (e) => {
@@ -369,7 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showNextImage();
                     wheelDelta = 0;
                 }
-            });
+            }, { signal: projectSignal });
 
             // Show previous image
             function showPrevImage() {
@@ -392,6 +478,11 @@ document.addEventListener('DOMContentLoaded', () => {
             imageNavPrev = showPrevImage;
 
             function updateImage(){
+                // Replace listeners from the previous image render so none stack up
+                if (imageEventController) imageEventController.abort();
+                imageEventController = new AbortController();
+                const imageSignal = imageEventController.signal;
+
                 // Update the featured display
                 const project = projects[project_index];
                 // show the end-text slide instead of an image on the last slide
@@ -449,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         exitFullscreen();
                     }
-                });
+                }, { signal: imageSignal });
 
                 // Press 'f' to fullscreen
                 document.addEventListener('keydown', (e) => {
@@ -459,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if ((e.key === 'Escape') || (e.key === 'f') && document.fullscreenElement) {
                         exitFullscreen();
                     }
-                });
+                }, { signal: imageSignal });
 
                 /*
                 // Exit fullscreen on click outside image
