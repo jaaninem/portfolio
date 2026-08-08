@@ -9,7 +9,7 @@
 
 
 :root{
-    --project-title-height: 80px; /* Height of each project title */
+    --project-title-height: 60px; /* Height of each project title */
     --project-title-font-size: 25px; /* Font size for project titles */
     --gallery-container-width: 25vw; /* Width of the gallery container */
     --gallery-container-mobile-height: 40dvh; /* Height of the gallery container on mobile */
@@ -405,8 +405,8 @@ body {
     position: absolute;
     left: 0;
     right: 0;
-    /* Adjust from 50% to exactly align with project titles */
-    top: calc(45% - 1px); 
+    /* Center the line on the selected project title (title sits at 50% - half its height) */
+    top: calc(50% - var(--project-title-height) / 2); 
     transform: translateY(-50%);
     height: 2px;
     background-color: rgba(0, 64, 255, 0.6);
