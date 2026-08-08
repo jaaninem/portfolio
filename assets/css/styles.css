@@ -220,6 +220,10 @@ body {
     animation-delay: calc(var(--line) * 0.2s);
 }
 
+#about-text a {
+    color: #ae00ff;
+}
+
 #name, #about, #back {
     bottom: calc(18px + env(safe-area-inset-bottom)); /* keep clear of the iOS home indicator */
     position: absolute;
@@ -307,6 +311,7 @@ body {
 
 /* End-of-project text slide */
 #project-end-text {
+    margin: 0 auto; /* center the text box within the display panel */
     max-width: 70%;
     max-height: 100%;
     overflow-y: auto;
