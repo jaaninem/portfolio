@@ -62,6 +62,21 @@ body {
     overflow: hidden; /* disable native scroll */
 }
 
+/* Blur band behind the bottom buttons so they stay legible over project titles */
+#gallery-container::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(55px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0);            /* translucent wash (also the no-backdrop-filter fallback) */
+    -webkit-backdrop-filter: blur(8px);                /* iOS Safari */
+    backdrop-filter: blur(8px);
+    z-index: 90;                                       /* above project titles (10), below the buttons (100) */
+    pointer-events: none;                              /* titles underneath stay clickable */
+}
+
 /* Gallery Container (Left Sidebar) */
 #gallery-container {
     width: var(--gallery-container-width); /* Increase from 45% to 60% for more horizontal space */
@@ -239,6 +254,7 @@ body {
     z-index: 100;
     animation: var(--gallery-elements-animation);
     transition: var(--gallery-elements-about-transition);
+    /*box-shadow: 0 10px 10px rgba(0,0,0,0.2); */
 }
 
 #name {
