@@ -9,8 +9,8 @@
 
 
 :root{
-    --project-title-height: 80px; /* Height of each project title */
-    --project-title-font-size: 25px; /* Font size for project titles */
+    --project-title-height: 60px; /* Height of each project title */
+    --project-title-font-size: 45px; /* Font size for project titles */
     --gallery-container-width: 25vw; /* Width of the gallery container */
     --gallery-container-mobile-height: 40dvh; /* Height of the gallery container on mobile */
     --gallery-container-about-width: 60vw; /* Width of the gallery container when in about mode */
@@ -39,6 +39,7 @@ body {
     overflow: hidden;
     /* overflow-y: visible; */
     min-height: 100vh;
+    min-height: 100dvh; /* iOS Safari: track the dynamic (collapsing toolbar) height */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -52,12 +53,28 @@ body {
     display: flex;
     flex-direction: row;
     height: 100vh;
+    height: 100dvh; /* iOS Safari: match the visible viewport height */
     overflow: hidden; /* disable native scroll */
     width: 100%;
 }
 
 .main-component {
     overflow: hidden; /* disable native scroll */
+}
+
+/* Blur band behind the bottom buttons so they stay legible over project titles */
+#gallery-container::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(55px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0);            /* translucent wash (also the no-backdrop-filter fallback) */
+    -webkit-backdrop-filter: blur(8px);                /* iOS Safari */
+    backdrop-filter: blur(8px);
+    z-index: 90;                                       /* above project titles (10), below the buttons (100) */
+    pointer-events: none;                              /* titles underneath stay clickable */
 }
 
 /* Gallery Container (Left Sidebar) */
@@ -112,6 +129,7 @@ body {
     min-width: 100%; /* Ensure full width */
     margin-top: calc(2 * var(--project-title-height));/* - var(--project-title-font-size) / 2);*/ /* Add some space at the top */
     /*transform: 0.2s ease-out;*/
+    will-change: transform; /* Keep the scroll animation on its own compositor layer */
 }
 
 .project-container {
@@ -129,34 +147,44 @@ body {
     padding: 0 0px; /* Remove vertical padding */
     margin: 0;
     color: grey;
+    /*font-weight: bold;*/
     font-size: var(--project-title-font-size);
     text-align: center;
-    transition: all 0.3s ease;
+    transition: color 0.15s ease-out, opacity 0.15s ease-out, transform 0.15s ease-out; /* only compositor-friendly properties */
     opacity: 0.3;
     cursor: pointer;
     height: var(--project-title-height);
     display: flex;
     align-items: center; /* Ensure text is vertically centered */
     justify-content: center;
-    width: 50%; /* Make wider */
+    width: max-content; /* size to the text, only wrap when out of room */
+    max-width: 100%; /* cap so very long titles still wrap instead of overflowing */
+    text-wrap: balance; /* balance lines nicely if wrapping does happen */
     position: relative; /* Add this for proper stacking */
     z-index: 10; /* Ensure text is above the cursor line */
+    -webkit-backface-visibility: hidden; /* Safari: force GPU rasterization to avoid blurry scaled text */
+    backface-visibility: hidden;
+    will-change: transform;
     /* Add this margin to shift titles down slightly */
     margin-top: 0px;
     overflow-wrap: break-word; /* Break long words if needed */
 	letter-spacing: 0px;
 }
-.project-title:hover {
-    color: darkgrey;
-    font-size: calc(1.2 * var(--project-title-font-size)); /* Slightly larger on hover */
-
+/* Hover effects only on devices that actually hover (no sticky hover on touch) */
+@media (hover: hover) {
+    .project-title:hover {
+        color: darkgrey;
+        /*transform: scale(1.12); /* Slightly larger on hover */
+    }
 }
 .project-title.active {
-    font-size: calc(1.5 * var(--project-title-font-size)); /* Make active item larger */
     color: black;
     font-weight: bold;
     opacity: 1;
-    width: 70%; /* Active titles can use full width */
+    /* sync the title's selection change with the cursor line's 0.35s slide */
+    transition: color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                font-weight 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .additional-infos {
@@ -218,8 +246,12 @@ body {
     animation-delay: calc(var(--line) * 0.2s);
 }
 
+#about-text a {
+    color: #ae00ff;
+}
+
 #name, #about, #back {
-    bottom: 18px;
+    bottom: calc(18px + env(safe-area-inset-bottom)); /* keep clear of the iOS home indicator */
     position: absolute;
     font-size: 0.95rem;
     font-weight: bold;
@@ -229,6 +261,7 @@ body {
     z-index: 100;
     animation: var(--gallery-elements-animation);
     transition: var(--gallery-elements-about-transition);
+    /*box-shadow: 0 10px 10px rgba(0,0,0,0.2); */
 }
 
 #name {
@@ -253,7 +286,8 @@ body {
     padding: 7% 5%;
     background: #fff;
     position: relative;
-    overflow: hidden; 
+    overflow: hidden;
+    touch-action: none; /* Let horizontal swipes on the image change photos */
 }
 
 /* ensure the image container fills the panel */
@@ -305,6 +339,7 @@ body {
 
 /* End-of-project text slide */
 #project-end-text {
+    margin: 0 auto; /* center the text box within the display panel */
     max-width: 70%;
     max-height: 100%;
     overflow-y: auto;
@@ -363,7 +398,7 @@ body {
 
 .counter {
     position: absolute;
-    bottom: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom)); /* keep clear of the iOS home indicator */
     left: 50%;
     transform: translateX(-50%);
     background: rgba(50, 50, 50, .2);
@@ -398,8 +433,8 @@ body {
     position: absolute;
     left: 0;
     right: 0;
-    /* Adjust from 50% to exactly align with project titles */
-    top: calc(45% - 1px); 
+    /* Center the line on the selected project title (title sits at 50% - half its height) */
+    top: calc(50% - var(--project-title-height) / 2); 
     transform: translateY(-50%);
     height: 2px;
     background-color: rgba(0, 64, 255, 0.6);

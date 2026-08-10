@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function projectTransitionAnimation(position, newIndex){
-            projectGallery.style.transition = 'transform 0.2s ease-out';
+            projectGallery.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
             projectGallery.style.transform = `translateY(${-position}px)`;
             if (newIndex !== project_index) {
                 project_index = newIndex;
@@ -151,17 +151,52 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Horizontal swipe on the featured image (touch)
+        // Bound once, so it always targets the current project via imageNav hooks.
+        // Declared before updateProject() so the hooks can be assigned there.
+        let imageNavNext = null;
+        let imageNavPrev = null;
+        let touchStartX = 0;
+        let touchStartY2 = 0;
+        let isImageTouch = false;
+
+        // AbortControllers to dedupe listeners added per project render / image update
+        let projectEventController = null;
+        let imageEventController = null;
+
+        mainDisplay.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY2 = e.touches[0].clientY;
+                isImageTouch = true;
+            }
+        }, { passive: true });
+
+        mainDisplay.addEventListener('touchend', (e) => {
+            if (!isImageTouch) return;
+            isImageTouch = false;
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY2;
+            const threshold = 50; // px
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+                if (dx < 0) {
+                    imageNavNext && imageNavNext(); // swipe left -> next
+                } else {
+                    imageNavPrev && imageNavPrev(); // swipe right -> prev
+                }
+            }
+        });
+
         // Initialize the first project
         updateProject();
 
-        const minSwipeDistance = 0; // Minimum distance to consider a swipe
+        const scrollSpeed = 0.075; // Adjust this for scroll sensitivity (desktop wheel)
 
-        // or galleryWrapper
-        // Add these variables to track touch state
-        let touchStartY = 0;
-        let isTouchActive = false;
-        const scrollSpeed = 0.075; // Adjust this for scroll sensitivity
-        const mobileScrollMultiplier = 1; // Adjust this for mobile scroll sensitivity
+        // Gallery swipe: any vertical swipe switches to the next / previous project,
+        // regardless of the distance (predictable: one project per swipe).
+        let swipeStartX = 0;
+        let swipeStartY = 0;
+        let swipeMoved = false;
 
         // Wheel event (desktop)
         galleryContainer.addEventListener('wheel', (e) => {
@@ -169,34 +204,56 @@ document.addEventListener('DOMContentLoaded', () => {
             handleScroll(e.deltaY);
         });
 
-        // Touch events (mobile)
+        // Touch events (mobile) - a swipe always switches exactly one project
         galleryContainer.addEventListener('touchstart', (e) => {
             if (e.touches.length > 0) {
-                touchStartY = e.touches[0].clientY;
-                isTouchActive = true;
+                swipeStartX = e.touches[0].clientX;
+                swipeStartY = e.touches[0].clientY;
+                swipeMoved = false;
             }
         });
 
         galleryContainer.addEventListener('touchmove', (e) => {
-            if (!isTouchActive) return;
-            e.preventDefault();
-            
-            const touchY = e.touches[0].clientY;
-            const deltaY = touchStartY - touchY; // Inverted for natural scroll direction
-            touchStartY = touchY;
-            
-            handleScroll(deltaY * mobileScrollMultiplier);
+            if (e.touches.length === 0) return;
+            const dx = e.touches[0].clientX - swipeStartX;
+            const dy = e.touches[0].clientY - swipeStartY;
+            // Past a small tap threshold this is a swipe: suppress the title click
+            if (!swipeMoved && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+                swipeMoved = true;
+            }
+            if (swipeMoved) {
+                e.preventDefault();
+            }
         }, { passive: false });
 
-        galleryContainer.addEventListener('touchend', () => {
-            isTouchActive = false;
+        galleryContainer.addEventListener('touchend', (e) => {
+            if (!swipeMoved) return; // a tap: let the title's click select it
+            const dx = e.changedTouches[0].clientX - swipeStartX;
+            const dy = e.changedTouches[0].clientY - swipeStartY;
+            const threshold = 30; // px, minimum distance for a swipe
+            // Only vertical, dominant swipes switch projects
+            if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > threshold) {
+                if (dy < 0) {
+                    swipeToProject(project_index + 1); // finger up -> next
+                } else {
+                    swipeToProject(project_index - 1); // finger down -> previous
+                }
+            }
         });
 
         galleryContainer.addEventListener('touchcancel', () => {
-            isTouchActive = false;
+            // nothing to do; the touch was cancelled
         });
 
-        // Unified scroll handler
+        // Switch to an adjacent project (clamped to the list bounds)
+        function swipeToProject(index) {
+            const nextIndex = Math.min(Math.max(index, 0), totalProjects - 1);
+            if (nextIndex !== project_index) {
+                projectTransition(nextIndex);
+            }
+        }
+
+        // Unified scroll handler (desktop wheel: stepped movement, snaps via projectTransitionAnimation)
         function handleScroll(deltaY) {
 
             const additionalSpace = projectHeight / 2; // Additional space to scroll past the last project
@@ -284,6 +341,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function updateProject() {
+            // Replace listeners from the previous project render so none stack up
+            if (projectEventController) projectEventController.abort();
+            projectEventController = new AbortController();
+            const projectSignal = projectEventController.signal;
 
             let image_index = imageIndices[project_index] || 0; 
             const project = projects[project_index];
@@ -313,8 +374,8 @@ document.addEventListener('DOMContentLoaded', () => {
             updateImage();
 
             // Event listeners for buttons
-            prevBtn.addEventListener('click', showPrevImage);
-            nextBtn.addEventListener('click', showNextImage);
+            prevBtn.addEventListener('click', showPrevImage, { signal: projectSignal });
+            nextBtn.addEventListener('click', showNextImage, { signal: projectSignal });
             
             // Keyboard navigation
             document.addEventListener('keydown', (e) => {
@@ -323,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (e.key === 'ArrowRight') {
                     showNextImage();
                 }
-            });
+            }, { signal: projectSignal });
 
             let wheelDelta = 0;
             mainDisplay.addEventListener('wheel', (e) => {
@@ -337,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showNextImage();
                     wheelDelta = 0;
                 }
-            });
+            }, { signal: projectSignal });
 
             // Show previous image
             function showPrevImage() {
@@ -355,9 +416,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateImage();
                 }
             }
-            
+            // Keep the touch-swipe hooks pointing at this project's navigation
+            imageNavNext = showNextImage;
+            imageNavPrev = showPrevImage;
 
             function updateImage(){
+                // Replace listeners from the previous image render so none stack up
+                if (imageEventController) imageEventController.abort();
+                imageEventController = new AbortController();
+                const imageSignal = imageEventController.signal;
+
                 // Update the featured display
                 const project = projects[project_index];
                 // show the end-text slide instead of an image on the last slide
@@ -408,13 +476,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 */
 
-                mainDisplay.addEventListener('dblclick', () => {
+                mainDisplay.addEventListener('dblclick', (e) => {
+                    if (e.target.closest('.nav-btn')) return; // double-clicking the arrows must not toggle fullscreen
                     if (!document.fullscreenElement) {
                         enterFullscreen();
                     } else {
                         exitFullscreen();
                     }
-                });
+                }, { signal: imageSignal });
 
                 // Press 'f' to fullscreen
                 document.addEventListener('keydown', (e) => {
@@ -424,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if ((e.key === 'Escape') || (e.key === 'f') && document.fullscreenElement) {
                         exitFullscreen();
                     }
-                });
+                }, { signal: imageSignal });
 
                 /*
                 // Exit fullscreen on click outside image

@@ -9,7 +9,7 @@
 
   * \[ ] swipe left and featured photo
   * \[ ] flou en bas gallery pour pas overlap textes
-  * \[ ] regler padding safari
+  * \[x] regler padding safari
   * \[ ] changer taille photos, scroll -> 2/3 photo 1/3 scroll
 
 
