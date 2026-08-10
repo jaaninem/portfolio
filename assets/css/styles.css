@@ -147,9 +147,6 @@ body {
     text-wrap: balance; /* balance lines nicely if wrapping does happen */
     position: relative; /* Add this for proper stacking */
     z-index: 10; /* Ensure text is above the cursor line */
-    -webkit-backface-visibility: hidden; /* Safari: force GPU rasterization to avoid blurry scaled text */
-    backface-visibility: hidden;
-    will-change: transform;
     /* Add this margin to shift titles down slightly */
     margin-top: 0px;
     overflow-wrap: break-word; /* Break long words if needed */
@@ -166,10 +163,10 @@ body {
     color: black;
     font-weight: bold;
     opacity: 1;
-    /* sync the title's selection change with the cursor line's 0.35s slide */
+    /* sync the title's selection change with the cursor line's 0.35s slide;
+       font-weight is excluded: it can't interpolate cleanly and janks on mobile */
     transition: color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                font-weight 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+                opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .additional-infos {
