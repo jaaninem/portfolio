@@ -329,22 +329,26 @@ body {
     touch-action: none; /* Let horizontal swipes on the image change photos */
 }
 
-/* ensure the image container fills the panel */
-.image-container {
-    width: 100%;
-    height: 100%;
+/* Fill the panel's content box with the featured photo, framed by a small equal top/bottom padding */
+#image-container {
+    position: absolute;
+    top: 7%;   /* matches #main-display padding, so it fills the content area */
+    right: 5%;
+    bottom: 7%;
+    left: 5%;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 1% 3%; /* top = bottom = 2%, sides 4% */
+    box-sizing: border-box;
 }
 
 /* scale the photo to fit its container */
 #featured-image {
     max-width: 100%;    /* fill panel width */
     max-height: 100%;   /* fill panel height */
-    width: auto;
+    width: auto;        /* size naturally to the photo's own aspect */
     height: auto;
-    object-fit: contain;
     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     border-radius: 1px;
     animation: fadeIn 2s ease; /* Add fade-in animation */
@@ -579,6 +583,13 @@ body {
         width: 100%;
         height: calc(100dvh - var(--gallery-container-mobile-height));
         padding: 20% 8%;
+    }
+
+    #image-container {
+        top: 20%; /* match #main-display's mobile padding so it fills the content area */
+        right: 8%;
+        bottom: 20%;
+        left: 8%;
     }
     /*
     .gallery {
