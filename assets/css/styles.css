@@ -76,7 +76,7 @@ body {
     align-items: center;
     resize: horizontal;
     transition: var(--gallery-container-about-transition);
-    touch-action: none; /* Prevent browser scrolling */
+    touch-action: pan-x; /* Allow the gallery-name row to scroll horizontally; vertical handled by JS */
     -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
     overflow: hidden;
 }
@@ -259,10 +259,9 @@ body {
     right: 0;
     padding: calc(20px + env(safe-area-inset-top)) 28px 12px;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 18px;
-    justify-content: flex-end; /* right-aligned on desktop */
     background: linear-gradient(to bottom, #f8f8f8 0%, #f8f8f8 75%, rgba(248, 248, 248, 0) 100%); /* fades into the titles below */
     z-index: 100;
     animation: var(--gallery-elements-animation);
@@ -283,10 +282,33 @@ body {
 .gallery-nav-btn.about-btn {
     color: #ae00ff; /* differentiate the About button */
     font-style: italic;
+    margin-right: auto; /* keep About pinned left, push the gallery names right */
+    flex-shrink: 0;
+}
+
+.gallery-nav-btn.gallery-btn {
+    flex-shrink: 0; /* don't compress the names; scroll instead */
 }
 
 .gallery-nav-btn.gallery-btn.active {
     text-decoration: underline; /* highlight the active gallery */
+}
+
+/* Right-aligned, horizontally scrollable row of gallery names (hidden scrollbar) */
+#gallery-buttons {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-left: auto; /* right-align the gallery names */
+    min-width: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    touch-action: pan-x; /* allow horizontal scrolling of the row on touch */
+    scrollbar-width: none; /* hidden scrollbar */
+    -webkit-overflow-scrolling: touch;
+}
+#gallery-buttons::-webkit-scrollbar {
+    display: none; /* hidden scrollbar */
 }
 
 
@@ -508,7 +530,6 @@ body {
         bottom: 0;
         padding: 12px 28px calc(20px + env(safe-area-inset-bottom)); /* sit above the home indicator */
         background: linear-gradient(to top, #f8f8f8 0%, #f8f8f8 75%, rgba(248, 248, 248, 0) 100%); /* fade into the titles above */
-        justify-content: flex-end; /* right-aligned on mobile too */
     }
 
     #main-display {

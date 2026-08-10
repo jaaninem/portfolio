@@ -222,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Touch events (mobile) - a swipe always switches exactly one project
         galleryContainer.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.gallery-buttons')) return; // let the gallery-name row scroll natively
             if (e.touches.length > 0) {
                 swipeStartX = e.touches[0].clientX;
                 swipeStartY = e.touches[0].clientY;
@@ -230,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         galleryContainer.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.gallery-buttons')) return; // don't hijack the gallery-name scroll
             if (e.touches.length === 0) return;
             const dx = e.touches[0].clientX - swipeStartX;
             const dy = e.touches[0].clientY - swipeStartY;
@@ -337,6 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Build the gallery-name buttons at the top of the gallery panel
         function buildGalleryButtons() {
+            const galleryButtons = document.getElementById('gallery-buttons');
             galleryList.forEach((gallery, index) => {
                 const btn = document.createElement('button');
                 btn.classList.add('gallery-nav-btn', 'gallery-btn');
@@ -349,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     btn.classList.add('active');
                     switchGallery(gallery.file);
                 });
-                galleryNav.appendChild(btn);
+                galleryButtons.appendChild(btn);
             });
         }
 
