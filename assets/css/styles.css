@@ -62,21 +62,6 @@ body {
     overflow: hidden; /* disable native scroll */
 }
 
-/* Blur band behind the bottom buttons so they stay legible over project titles */
-#gallery-container::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: calc(55px + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, 0);            /* translucent wash (also the no-backdrop-filter fallback) */
-    -webkit-backdrop-filter: blur(8px);                /* iOS Safari */
-    backdrop-filter: blur(8px);
-    z-index: 90;                                       /* above project titles (10), below the buttons (100) */
-    pointer-events: none;                              /* titles underneath stay clickable */
-}
-
 /* Gallery Container (Left Sidebar) */
 #gallery-container {
     width: var(--gallery-container-width); /* Increase from 45% to 60% for more horizontal space */
@@ -265,17 +250,20 @@ body {
     /*box-shadow: 0 10px 10px rgba(0,0,0,0.2); */
 }
 
-/* Top gallery navigation (About + gallery names) */
+/* Top gallery navigation (About + gallery names) - opaque strip separating the
+   nav from the project titles scrolling underneath, with a soft fade at its edge */
 #gallery-nav {
     position: absolute;
-    top: calc(20px + env(safe-area-inset-top));
-    left: 28px;
-    right: 28px;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: calc(20px + env(safe-area-inset-top)) 28px 12px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 18px;
-    justify-content: flex-start; /* left-aligned on desktop */
+    justify-content: flex-end; /* right-aligned on desktop */
+    background: linear-gradient(to bottom, #f8f8f8 0%, #f8f8f8 75%, rgba(248, 248, 248, 0) 100%); /* fades into the titles below */
     z-index: 100;
     animation: var(--gallery-elements-animation);
 }
@@ -516,7 +504,11 @@ body {
     }
 
     #gallery-nav {
-        justify-content: center; /* center the gallery names + about on mobile */
+        top: auto;
+        bottom: 0;
+        padding: 12px 28px calc(20px + env(safe-area-inset-bottom)); /* sit above the home indicator */
+        background: linear-gradient(to top, #f8f8f8 0%, #f8f8f8 75%, rgba(248, 248, 248, 0) 100%); /* fade into the titles above */
+        justify-content: flex-end; /* right-aligned on mobile too */
     }
 
     #main-display {
