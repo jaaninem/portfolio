@@ -1,4 +1,15 @@
-const projectHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--project-title-height"));
+// Read the project title row height (the scroll step). It derives from the title
+// font size, which is scaled down on mobile, so re-read it on viewport changes.
+// We read the used height of a rendered .project-title (which resolves the calc),
+// because getComputedStyle returns raw var()/calc() text for custom properties.
+function readProjectHeight() {
+    const title = document.querySelector('.project-title');
+    if (title) {
+        return parseFloat(getComputedStyle(title).height);
+    }
+    return projectHeight; // titles not rendered yet: keep the current value
+}
+let projectHeight = 60; // placeholder; set precisely once the titles are rendered
 
 // Convert a glob pattern ('*', '?') into a RegExp
 function globToRegExp(pattern) {
@@ -151,6 +162,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderProjects();
         buildGalleryButtons();
+
+        // The titles now exist, so we can resolve the actual row height (calc)
+        projectHeight = readProjectHeight();
+
+        // Keep the scroll step in sync when crossing the mobile/desktop breakpoint
+        function onViewportResize() {
+            projectHeight = readProjectHeight();
+            currentPosition = project_index * projectHeight;
+            projectGallery.style.transition = 'none';
+            projectGallery.style.transform = `translateY(${-currentPosition}px)`;
+        }
+        window.addEventListener('resize', onViewportResize);
+        window.addEventListener('orientationchange', onViewportResize);
 
         function projectTransition(newIndex){
             currentPosition = newIndex * projectHeight;

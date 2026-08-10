@@ -9,8 +9,10 @@
 
 
 :root{
-    --project-title-height: 60px; /* Height of each project title */
-    --project-title-font-size: 45px; /* Font size for project titles */
+    --project-title-font-size-base: 45px; /* Base font size for project titles */
+    --project-title-font-size: var(--project-title-font-size-base);
+    --project-title-height: calc(var(--project-title-font-size) * 1.3333); /* Row height / scroll step, derived from the font size */
+    --gallery-mobile-font-scale: 0.7; /* Scale factor for gallery-container text on mobile (1 = unchanged) */
     --gallery-container-width: 25vw; /* Width of the gallery container */
     --gallery-container-mobile-height: 25dvh; /* Height of the gallery container on mobile */
     --gallery-container-about-width: 60vw; /* Width of the gallery container when in about mode */
@@ -506,6 +508,12 @@ body {
 
 /* Mobile Layout */ 
 @media (max-width: 768px) {
+    /* Scale the title font var on mobile so the derived row height / scroll step
+       (--project-title-height) shrinks along with it */
+    :root {
+        --project-title-font-size: calc(var(--project-title-font-size-base) * var(--gallery-mobile-font-scale));
+    }
+
     .container {
         flex-direction: column-reverse;
         max-height: 100vh; /* Allow height to adjust based on content */
@@ -540,7 +548,20 @@ body {
     }
 
     #cursor-line {
-        top: calc(10px + var(--project-title-height) / 2);
+        top: calc(10px + var(--project-title-height) / 2); /* must stay in sync with #project-gallery margin-top */
+    }
+
+    /* Scale down all gallery-container text on mobile (the title font is already
+       scaled via the --project-title-font-size variable above) */
+    .additional-infos {
+        font-size: calc(1rem * var(--gallery-mobile-font-scale));
+    }
+    #about-text {
+        font-size: calc(1.15rem * var(--gallery-mobile-font-scale));
+    }
+    .gallery-nav-btn,
+    #back {
+        font-size: calc(0.95rem * var(--gallery-mobile-font-scale));
     }
 
     #main-display {
