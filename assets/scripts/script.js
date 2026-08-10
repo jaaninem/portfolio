@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function projectTransitionAnimation(position, newIndex){
-            projectGallery.style.transition = 'transform 0.25s cubic-bezier(0.22, 0.61, 0.36, 1)';
+            projectGallery.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
             projectGallery.style.transform = `translateY(${-position}px)`;
             if (newIndex !== project_index) {
                 project_index = newIndex;
