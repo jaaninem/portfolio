@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize the first project
         updateProject();
 
-        const scrollSpeed = 0.075; // Adjust this for scroll sensitivity (desktop wheel)
+        const scrollSpeed = 0.15; // Adjust this for scroll sensitivity (desktop wheel)
 
         // Gallery swipe: any vertical swipe switches to the next / previous project,
         // regardless of the distance (predictable: one project per swipe).
