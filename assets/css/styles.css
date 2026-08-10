@@ -437,16 +437,15 @@ body {
 
 .counter {
     position: absolute;
-    bottom: calc(20px + env(safe-area-inset-bottom)); /* keep clear of the iOS home indicator */
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(50, 50, 50, .2);
-    color: white;
-    padding: 5px 20px;
-    border-radius: 25px;
+    bottom: calc(15px + env(safe-area-inset-bottom)); /* keep clear of the iOS home indicator */
+    right: 20px; /* bottom-right of the navigation panel */
+    background: transparent; /* remove the dark pill */
+    color: black;
+    padding: 0;
+    border-radius: 0;
     font-size: 1rem;
     font-weight: 600;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
 }
 
 .project-year {
@@ -563,6 +562,9 @@ body {
     .gallery-nav-btn,
     #back {
         font-size: calc(0.95rem * var(--gallery-mobile-font-scale));
+    }
+    .counter {
+        font-size: calc(1rem * var(--gallery-mobile-font-scale));
     }
 
     #main-display {
