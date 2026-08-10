@@ -90,10 +90,10 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    generate_thumbnails(
-        photo_dir=args.photo_dir,
-        thumb_dir=args.thumb_dir,
-        thumb_width=args.width
-    )
+    #generate_thumbnails(
+    #    photo_dir=args.photo_dir,
+    #    thumb_dir=args.thumb_dir,
+    #    thumb_width=args.width
+    #)
 
     generate_manifest(photo_dir=args.photo_dir)
