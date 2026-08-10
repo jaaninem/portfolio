@@ -533,7 +533,7 @@ body {
     #gallery-nav {
         top: auto;
         bottom: 0;
-        padding: 12px 28px calc(20px + env(safe-area-inset-bottom)); /* sit above the home indicator */
+        padding: calc(18px * var(--gallery-mobile-font-scale)) calc(24px * var(--gallery-mobile-font-scale)) calc(18px * var(--gallery-mobile-font-scale) + env(safe-area-inset-bottom)); /* slightly more padding on the sides, scales with the smaller buttons */
         background: linear-gradient(to top, #f8f8f8 0%, #f8f8f8 75%, rgba(248, 248, 248, 0) 100%); /* fade into the titles above */
     }
 
