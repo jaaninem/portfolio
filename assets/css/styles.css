@@ -567,6 +567,14 @@ body {
         font-size: calc(1rem * var(--gallery-mobile-font-scale));
     }
 
+    /* Center the titles on mobile and keep them clear of the year/location labels */
+    .project-container {
+        padding-left: 0;
+    }
+    .project-title {
+        max-width: calc(100% - 80px);
+    }
+
     #main-display {
         width: 100%;
         height: calc(100dvh - var(--gallery-container-mobile-height));
