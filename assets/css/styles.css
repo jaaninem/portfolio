@@ -12,7 +12,7 @@
     --project-title-height: 60px; /* Height of each project title */
     --project-title-font-size: 45px; /* Font size for project titles */
     --gallery-container-width: 25vw; /* Width of the gallery container */
-    --gallery-container-mobile-height: 40dvh; /* Height of the gallery container on mobile */
+    --gallery-container-mobile-height: 25dvh; /* Height of the gallery container on mobile */
     --gallery-container-about-width: 60vw; /* Width of the gallery container when in about mode */
     --gallery-container-about-mobile-height: 100dvh; /* Height of the gallery container when in about mode on mobile */
     --gallery-container-about-transition: width 0.5s ease-in-out;
@@ -527,6 +527,20 @@ body {
         bottom: 0;
         padding: 12px 28px calc(20px + env(safe-area-inset-bottom)); /* sit above the home indicator */
         background: linear-gradient(to top, #f8f8f8 0%, #f8f8f8 75%, rgba(248, 248, 248, 0) 100%); /* fade into the titles above */
+    }
+
+    /* Top-anchor the title list so the selected title sits near the top of the
+       (shorter) panel, avoiding wasted space below the centered list */
+    #gallery-container {
+        align-items: flex-start;
+    }
+
+    #project-gallery {
+        margin-top: 10px;
+    }
+
+    #cursor-line {
+        top: calc(10px + var(--project-title-height) / 2);
     }
 
     #main-display {
