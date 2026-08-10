@@ -51,8 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load photo data
     // also fetch the manifest of available images to expand '*' glob patterns
+    const galleryList = (typeof GALLERIES !== 'undefined' && Array.isArray(GALLERIES)) ? GALLERIES : [];
+    const firstGalleryFile = galleryList.length > 0 ? galleryList[0].file : 'galleries/main.json';
+
     Promise.all([
-        fetch('galleries/main.json')
+        fetch(firstGalleryFile)
             .then(response => {
                 if (!response.ok) throw new Error('Network response was not ok');
                 return response.json();
@@ -67,74 +70,87 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Expand any '*' glob patterns in image paths before rendering
             projects = projects.map(project => ({ ...project, images: expandProjectImages(project, availableFiles) }));
-            initGallery(projects);
+            initGallery(projects, availableFiles, galleryList);
         })
         .catch(error => {
             console.error('Error loading projects:', error);
             displayError();
         });
     
-    function initGallery(projects) {
+    function initGallery(projects, availableFiles, galleryList) {
 	    console.log('Project height:', projectHeight);
 
-        // index to track image indices for each project
-        const imageIndices = {};
+        const galleryNav = document.getElementById('gallery-nav');
 
+        // index to track image indices for each project
+        let imageIndices = {};
+        // the projects currently displayed (swapped when switching galleries)
+        let currentProjects = projects;
 
         // Add project titles to gallery
-        projects.forEach((project, index) => {
+        function renderProjects() {
+            projectGallery.innerHTML = '';
+            imageIndices = {};
 
-            const projectContainer = document.createElement('div');
-            projectContainer.classList.add('project-container');
+            currentProjects.forEach((project, index) => {
 
-            const projectTitle = document.createElement('div');
-            projectTitle.classList.add('project-title');
-            projectTitle.textContent = project['project-title'];
-            
-            if (index === 0) {
-                projectTitle.classList.add('active');
-            }
+                const projectContainer = document.createElement('div');
+                projectContainer.classList.add('project-container');
 
-            const additionalInfos = document.createElement("div");
-            additionalInfos.classList.add("additional-infos")
+                const projectTitle = document.createElement('div');
+                projectTitle.classList.add('project-title');
+                projectTitle.textContent = project['project-title'];
+                
+                if (index === 0) {
+                    projectTitle.classList.add('active');
+                }
 
-            // Add location if present
-            if (project.location) {
-                const locationElem = document.createElement('span');
-                locationElem.classList.add('project-location');
-                locationElem.textContent = project.location;
-                additionalInfos.appendChild(locationElem);
-            }
-            // Add year if present
-            if (project.year) {
-                const yearElem = document.createElement('span');
-                yearElem.classList.add('project-year');
-                yearElem.textContent = project.year;
-                additionalInfos.appendChild(yearElem);
-            }
+                const additionalInfos = document.createElement("div");
+                additionalInfos.classList.add("additional-infos")
 
-            imageIndices[index] = 0;
+                // Add location if present
+                if (project.location) {
+                    const locationElem = document.createElement('span');
+                    locationElem.classList.add('project-location');
+                    locationElem.textContent = project.location;
+                    additionalInfos.appendChild(locationElem);
+                }
+                // Add year if present
+                if (project.year) {
+                    const yearElem = document.createElement('span');
+                    yearElem.classList.add('project-year');
+                    yearElem.textContent = project.year;
+                    additionalInfos.appendChild(yearElem);
+                }
 
-            // handle click event to select project
-            projectTitle.addEventListener('click', projectTitleFunction);
-            //projectTitle.addEventListener('touchend', projectTitleFunction);
+                imageIndices[index] = 0;
 
-            function projectTitleFunction(){
-                projectTransition(index);
-            }
+                // handle click event to select project
+                projectTitle.addEventListener('click', projectTitleFunction);
+                //projectTitle.addEventListener('touchend', projectTitleFunction);
 
-            // Append projectTitle after year and location
-            projectContainer.appendChild(projectTitle);
-            projectContainer.appendChild(additionalInfos)
+                function projectTitleFunction(){
+                    projectTransition(index);
+                }
 
-            projectGallery.appendChild(projectContainer);
-        });
-        
+                // Append projectTitle after year and location
+                projectContainer.appendChild(projectTitle);
+                projectContainer.appendChild(additionalInfos)
+
+                projectGallery.appendChild(projectContainer);
+            });
+
+            totalProjects = currentProjects.length;
+        }
+
         // Set up scrolling
         let currentPosition = 0;
         let project_index = 0;
         //let scrollTimeout = null;
-        const totalProjects = projects.length;
+        let totalProjects = 0;
+
+        renderProjects();
+        buildGalleryButtons();
 
         function projectTransition(newIndex){
             currentPosition = newIndex * projectHeight;
@@ -295,16 +311,57 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Switch to a different gallery file
+        function switchGallery(file) {
+            fetch(file)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data || !Array.isArray(data)) {
+                        throw new Error('Invalid gallery data');
+                    }
+                    currentProjects = data.map(project => ({ ...project, images: expandProjectImages(project, availableFiles) }));
+                    renderProjects();
+                    currentPosition = 0;
+                    project_index = 0;
+                    projectGallery.style.transition = 'none';
+                    projectGallery.style.transform = 'translateY(0px)';
+                    updateProject();
+                })
+                .catch(error => {
+                    console.error('Error loading gallery:', error);
+                });
+        }
+
+        // Build the gallery-name buttons at the top of the gallery panel
+        function buildGalleryButtons() {
+            galleryList.forEach((gallery, index) => {
+                const btn = document.createElement('button');
+                btn.classList.add('gallery-nav-btn', 'gallery-btn');
+                btn.textContent = gallery.name;
+                if (index === 0) {
+                    btn.classList.add('active');
+                }
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.gallery-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    switchGallery(gallery.file);
+                });
+                galleryNav.appendChild(btn);
+            });
+        }
+
         // About button logic
         const backBtn = document.getElementById('back');
         const aboutBtn = document.getElementById('about');
         const aboutText = document.getElementById('about-text');
-        const nameElem = document.getElementById('name');
         const cursorLine = document.getElementById('cursor-line');
         const navigation = document.querySelector('.navigation');
         const photoInfo = document.getElementById('photo-info');
 
-        const normalModeElements = [projectGallery, mainDisplay, cursorLine, nameElem, aboutBtn, imageContainer, navigation, photoInfo];
+        const normalModeElements = [projectGallery, mainDisplay, cursorLine, galleryNav, imageContainer, navigation, photoInfo];
         const aboutModeElements = [aboutText, backBtn];
 
         aboutBtn.addEventListener('click', aboutBtnFunction);
@@ -347,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const projectSignal = projectEventController.signal;
 
             let image_index = imageIndices[project_index] || 0; 
-            const project = projects[project_index];
+            const project = currentProjects[project_index];
             const totalImages = project.images.length;
             const hasEndText = !!(project['end-text']);
             const totalSlides = totalImages + (hasEndText ? 1 : 0);
@@ -427,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const imageSignal = imageEventController.signal;
 
                 // Update the featured display
-                const project = projects[project_index];
+                const project = currentProjects[project_index];
                 // show the end-text slide instead of an image on the last slide
                 const onEndText = hasEndText && image_index === totalImages;
                 if (onEndText) {
