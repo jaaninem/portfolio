@@ -458,11 +458,6 @@ body {
     pointer-events: none;
 }
 
-/* Waiting for the featured photo to settle its final size */
-.peek.is-loading {
-    visibility: hidden;
-}
-
 @media (hover: hover) {
     .peek:hover {
         opacity: 0.85;

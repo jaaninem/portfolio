@@ -129,11 +129,13 @@ by `#prev-peek` and `#next-peek` in `index.html`.
   peek's horizontal position outside it, using `--peek-gap`. On the end-text
   slide the text block is the reference instead. Peeks are clamped 2 px inside
   the panel so they never run off the edge.
-- Positions are recomputed on every image update, when the new photo finishes
-  decoding, and through a `ResizeObserver` on `#main-display` (viewport changes,
-  orientation changes, sidebar drag).
-- While a new photo decodes, the peeks carry `is-loading` and stay invisible so
-  they never flash at the previous photo's position.
+- On a photo slide the peek content and positions are only swapped once the new
+  photo is ready (`load`/`error`). The peeks of the previous photo stay visible
+  while that photo is still on screen, so they never blank out during a load.
+  The neighbour thumbnails are preloaded at the same moment so the swap does not
+  show an empty box.
+- Positions are also recomputed through a `ResizeObserver` on `#main-display`
+  (viewport changes, orientation changes, sidebar drag).
 - Sizes and opacity come from CSS variables; the mobile block shrinks both.
   See [config.md](config.md).
 

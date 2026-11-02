@@ -270,25 +270,48 @@ document.addEventListener('DOMContentLoaded', () => {
             peek.tabIndex = -1;
         }
 
+        // Which slides sit on each side of the current one.
+        // `nextIsText` marks the end-of-series slide, which has no photo.
+        function neighbourPaths(project, index, hasEndText, totalImages) {
+            const lastSlide = hasEndText ? totalImages : totalImages - 1;
+            return {
+                prev: index > 0 ? project.images[index - 1].image_path : null,
+                next: index < lastSlide && !(hasEndText && index === totalImages - 1)
+                    ? project.images[index + 1].image_path
+                    : null,
+                nextIsText: hasEndText && index === totalImages - 1,
+            };
+        }
+
         // Show the peeks for the current slide, if it has neighbours.
         function updatePeeks(project, index, hasEndText, totalImages) {
-            const lastSlide = hasEndText ? totalImages : totalImages - 1;
+            const neighbours = neighbourPaths(project, index, hasEndText, totalImages);
 
-            if (index > 0) {
-                showPeekImage(prevPeek, project.images[index - 1].image_path, 'Previous photo');
+            if (neighbours.prev) {
+                showPeekImage(prevPeek, neighbours.prev, 'Previous photo');
             } else {
                 hidePeek(prevPeek);
             }
 
-            if (index < lastSlide) {
-                if (hasEndText && index === totalImages - 1) {
-                    showPeekText(nextPeek, 'End of series');
-                } else {
-                    showPeekImage(nextPeek, project.images[index + 1].image_path, 'Next photo');
-                }
+            if (neighbours.next) {
+                showPeekImage(nextPeek, neighbours.next, 'Next photo');
+            } else if (neighbours.nextIsText) {
+                showPeekText(nextPeek, 'End of series');
             } else {
                 hidePeek(nextPeek);
             }
+        }
+
+        // Warm the cache so the new peeks can be painted in the same frame as
+        // the photo, without an empty box while their thumbnail downloads.
+        function preloadPeekThumbnails(project, index, hasEndText, totalImages) {
+            const neighbours = neighbourPaths(project, index, hasEndText, totalImages);
+            [neighbours.prev, neighbours.next].forEach(path => {
+                if (!path) return;
+                const thumbnail = new Image();
+                thumbnail.decoding = 'async';
+                thumbnail.src = `assets/thumbs/${path}`;
+            });
         }
 
         // Keep each peek just outside the featured photo, clamped inside the
@@ -633,26 +656,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         imageDesc.textContent = image.description || '';
                     }
                 }
-                updatePeeks(project, image_index, hasEndText, totalImages);
                 updateCounter();
-                positionPeeks();
 
-                // The photo's rendered box depends on its aspect ratio, so
-                // reposition the peeks once the new photo has been decoded.
-                if (!onEndText) {
-                    prevPeek.classList.add('is-loading');
-                    nextPeek.classList.add('is-loading');
-                    const settlePeeks = () => {
-                        prevPeek.classList.remove('is-loading');
-                        nextPeek.classList.remove('is-loading');
-                        positionPeeks();
-                    };
-                    featuredImg.addEventListener('load', settlePeeks, { once: true, signal: imageSignal });
-                    featuredImg.addEventListener('error', settlePeeks, { once: true, signal: imageSignal });
-                } else {
+                // The peeks always describe the photo that is currently on
+                // screen. On a photo slide they are swapped in the `load`
+                // callback, together with the photo, so they never blank out
+                // while the original downloads.
+                const syncPeeks = () => {
+                    updatePeeks(project, image_index, hasEndText, totalImages);
+                    positionPeeks();
+                };
+                if (onEndText) {
                     // The text slide is laid out immediately: nothing to wait for.
-                    prevPeek.classList.remove('is-loading');
-                    nextPeek.classList.remove('is-loading');
+                    syncPeeks();
+                } else {
+                    preloadPeekThumbnails(project, image_index, hasEndText, totalImages);
+                    featuredImg.addEventListener('load', syncPeeks, { once: true, signal: imageSignal });
+                    featuredImg.addEventListener('error', syncPeeks, { once: true, signal: imageSignal });
                 }
 
                 function enterFullscreen() {
