@@ -101,7 +101,10 @@ The sidebar width and the mobile panel height are CSS variables, documented in
 
 - Each project remembers its own image index in `imageIndices`.
 - The slide count is the number of images plus one when the project defines
-  `end-text`. The counter reads `current / total`.
+  `end-text`. The counter reads `current / total` and is written in the same
+  step that swaps the photo and the peeks, so it never runs ahead of the photo.
+  The selected index itself is stored immediately, so switching projects during
+  a load keeps the choice.
 - The featured photo always uses the original file under `assets/photos/`.
 - Image-level navigation, all clamped at the ends:
   - wheel on the photo panel, with a 100 px accumulated threshold;

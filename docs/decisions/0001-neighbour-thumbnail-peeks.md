@@ -81,8 +81,8 @@ Measured in headless Chromium after the change:
 Also checked: the `Fin` card on the last image, the end-text slide, rapid
 navigation in both directions, keyboard arrows, the About and Back round trip,
 and an empty browser console. A separate check held the original photo request
-for 800 ms: the peeks stayed visible and unchanged for the whole load, then
-swapped together with the photo.
+for 800 ms: the peeks and the counter stayed at the previous slide for the whole
+load, then swapped together with the photo.
 
 ## References
 

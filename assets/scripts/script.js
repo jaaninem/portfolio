@@ -656,23 +656,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         imageDesc.textContent = image.description || '';
                     }
                 }
-                updateCounter();
+                // Store the position immediately so switching projects before
+                // the photo loads keeps the selection.
+                imageIndices[project_index] = image_index;
 
-                // The peeks always describe the photo that is currently on
-                // screen. On a photo slide they are swapped in the `load`
-                // callback, together with the photo, so they never blank out
-                // while the original downloads.
-                const syncPeeks = () => {
-                    updatePeeks(project, image_index, hasEndText, totalImages);
+                // The counter, the peeks and the photo change at the same
+                // moment: when the new photo is ready (or immediately for the
+                // text slide). The peeks always describe the photo on screen,
+                // and the counter never runs ahead of it.
+                const slideIndex = image_index;
+                const syncSlide = () => {
+                    updatePeeks(project, slideIndex, hasEndText, totalImages);
                     positionPeeks();
+                    imageCounter.textContent = `${slideIndex + 1} / ${totalSlides}`;
                 };
                 if (onEndText) {
                     // The text slide is laid out immediately: nothing to wait for.
-                    syncPeeks();
+                    syncSlide();
                 } else {
-                    preloadPeekThumbnails(project, image_index, hasEndText, totalImages);
-                    featuredImg.addEventListener('load', syncPeeks, { once: true, signal: imageSignal });
-                    featuredImg.addEventListener('error', syncPeeks, { once: true, signal: imageSignal });
+                    preloadPeekThumbnails(project, slideIndex, hasEndText, totalImages);
+                    featuredImg.addEventListener('load', syncSlide, { once: true, signal: imageSignal });
+                    featuredImg.addEventListener('error', syncSlide, { once: true, signal: imageSignal });
                 }
 
                 function enterFullscreen() {
@@ -730,10 +734,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 */
-            }
-            function updateCounter() {
-                imageIndices[project_index] = image_index; // Update the index for the current project
-                imageCounter.textContent = `${image_index + 1} / ${totalSlides}`;
             }
         }
 
