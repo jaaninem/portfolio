@@ -20,6 +20,10 @@
     --gallery-container-about-transition: width 0.5s ease-in-out;
     --gallery-container-about-transition-mobile: height 0.5s ease-in-out;
     --gallery-elements-animation: fadeIn 0.5s ease;
+    --peek-width: clamp(26px, 3.2vw, 46px); /* Neighbour peek thumbnail width */
+    --peek-text-width: calc(var(--peek-width) * 0.78); /* End-of-series "Fin" card width */
+    --peek-gap: 10px; /* Space between the featured photo and its peeks */
+    --peek-opacity: 0.28; /* Resting opacity of the peeks */
 	/*--font-family: "SilkaMono", sans-serif;*/
 }
 
@@ -396,53 +400,86 @@ body {
 }
 
 
-.navigation {
+/* Neighbour photo peeks: small, faint thumbnails of the adjacent slides that
+   stand in for the old arrow buttons. JS (positionPeeks) places them just
+   outside the featured photo's rendered box, inside the panel's white gutter. */
+.peek {
     position: absolute;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 5px;
-}
-
-.nav-btn {
-    background: rgba(255, 255, 255, 0.0);
+    top: 50%;
+    left: 0; /* overwritten by script.js */
+    z-index: 2;
+    display: block;
+    width: var(--peek-width);
+    padding: 0;
     border: none;
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    background: none;
+    opacity: var(--peek-opacity);
+    transform: translateY(-50%);
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 0px 0px rgba(0, 0, 0, 0.2);
-    opacity: 1;
-    transform: scale(1);
+    transition: opacity 0.18s ease-out, transform 0.18s ease-out;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.nav-btn.hidden_btn {
+.peek-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 1px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+/* End-of-series slide: a tiny paper card instead of a photo preview */
+.peek.is-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--peek-text-width);
+    aspect-ratio: 3 / 4;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    color: #222;
+    font-size: calc(var(--peek-width) * 0.28);
+    letter-spacing: 0.04em;
+    line-height: 1;
+}
+
+.peek.is-text .peek-img {
+    display: none;
+}
+
+.peek:not(.is-text) .peek-label {
+    display: none;
+}
+
+/* No neighbour on that side */
+.peek.is-hidden {
     opacity: 0;
-    transform: scale(0.5);
+    visibility: hidden;
     pointer-events: none;
 }
 
-.nav-btn:hover {
-    background: rgba(255, 255, 255, 0);
-    transform: scale(1.4);
+/* Waiting for the featured photo to settle its final size */
+.peek.is-loading {
+    visibility: hidden;
 }
 
-.nav-btn i {
-    font-size: 30px;
-    color: #2c3e50;
+@media (hover: hover) {
+    .peek:hover {
+        opacity: 0.85;
+        transform: translateY(-50%) scale(1.06);
+    }
+}
+
+.peek:focus-visible {
+    opacity: 0.9;
+    outline: 1px solid rgba(0, 0, 0, 0.4);
+    outline-offset: 4px;
 }
 
 .counter {
     position: absolute;
     bottom: calc(15px + env(safe-area-inset-bottom)); /* keep clear of the iOS home indicator */
-    right: 20px; /* bottom-right of the navigation panel */
+    right: 20px; /* bottom-right of the photo panel */
     background: transparent; /* remove the dark pill */
     color: black;
     padding: 0;
@@ -504,10 +541,6 @@ body {
     display: none;
 }
 
-.navigation.hidden {
-    display: none;
-}
-
 
 /* Mobile Layout */ 
 @media (max-width: 768px) {
@@ -515,6 +548,8 @@ body {
        (--project-title-height) shrinks along with it */
     :root {
         --project-title-font-size: calc(var(--project-title-font-size-base) * var(--gallery-mobile-font-scale));
+        --peek-width: clamp(20px, 6.5vw, 28px); /* narrower photo gutter on phones */
+        --peek-gap: 6px;
     }
 
     .container {

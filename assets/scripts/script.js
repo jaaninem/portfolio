@@ -227,6 +227,119 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // --- Neighbour photo peeks ----------------------------------------
+        // The panel shows one faint thumbnail of the previous slide and one of
+        // the next slide, sitting just outside the featured photo. They replace
+        // the old arrow buttons while wheel/swipe/keyboard navigation remains.
+        const featuredImg = document.getElementById('featured-image');
+        const endTextElem = document.getElementById('project-end-text');
+        const prevPeek = document.getElementById('prev-peek');
+        const nextPeek = document.getElementById('next-peek');
+
+        function peekImage(peek) {
+            return peek.querySelector('.peek-img');
+        }
+
+        // Point a peek at a project image, preferring its generated thumbnail.
+        function showPeekImage(peek, imagePath, label) {
+            const image = peekImage(peek);
+            peek.classList.remove('is-text', 'is-hidden');
+            peek.setAttribute('aria-label', label);
+            peek.tabIndex = 0;
+            if (image.dataset.path !== imagePath) {
+                image.dataset.path = imagePath;
+                image.dataset.fallback = '';
+                image.alt = '';
+                image.src = `assets/thumbs/${imagePath}`;
+            }
+        }
+
+        // Represent the end-of-series text slide as a tiny "Fin" card.
+        function showPeekText(peek, label) {
+            const image = peekImage(peek);
+            peek.classList.add('is-text');
+            peek.classList.remove('is-hidden');
+            peek.setAttribute('aria-label', label);
+            peek.tabIndex = 0;
+            image.removeAttribute('src');
+            image.dataset.path = '';
+        }
+
+        function hidePeek(peek) {
+            peek.classList.add('is-hidden');
+            peek.tabIndex = -1;
+        }
+
+        // Show the peeks for the current slide, if it has neighbours.
+        function updatePeeks(project, index, hasEndText, totalImages) {
+            const lastSlide = hasEndText ? totalImages : totalImages - 1;
+
+            if (index > 0) {
+                showPeekImage(prevPeek, project.images[index - 1].image_path, 'Previous photo');
+            } else {
+                hidePeek(prevPeek);
+            }
+
+            if (index < lastSlide) {
+                if (hasEndText && index === totalImages - 1) {
+                    showPeekText(nextPeek, 'End of series');
+                } else {
+                    showPeekImage(nextPeek, project.images[index + 1].image_path, 'Next photo');
+                }
+            } else {
+                hidePeek(nextPeek);
+            }
+        }
+
+        // Keep each peek just outside the featured photo, clamped inside the
+        // panel's white gutter. The photo is centred vertically, so only the
+        // horizontal position has to be computed.
+        function positionPeeks() {
+            const panelRect = mainDisplay.getBoundingClientRect();
+            const onEndText = featuredImg.style.display === 'none';
+            const reference = onEndText ? endTextElem : featuredImg;
+            const referenceRect = reference.getBoundingClientRect();
+            const gap = parseFloat(
+                getComputedStyle(document.documentElement).getPropertyValue('--peek-gap')
+            ) || 10;
+            const edge = 2; // minimum distance from the panel edge
+            const referenceLeft = referenceRect.width ? referenceRect.left - panelRect.left : 0;
+            const referenceRight = referenceRect.width
+                ? referenceRect.right - panelRect.left
+                : panelRect.width;
+
+            if (!prevPeek.classList.contains('is-hidden')) {
+                const width = prevPeek.offsetWidth;
+                prevPeek.style.left = `${Math.max(edge, referenceLeft - gap - width)}px`;
+            }
+            if (!nextPeek.classList.contains('is-hidden')) {
+                const width = nextPeek.offsetWidth;
+                const left = Math.min(panelRect.width - width - edge, referenceRight + gap);
+                nextPeek.style.left = `${Math.max(edge, left)}px`;
+            }
+        }
+
+        // A missing thumbnail (e.g. a freshly added photo) falls back to the
+        // full image instead of leaving a blank peek.
+        [prevPeek, nextPeek].forEach(peek => {
+            const image = peekImage(peek);
+            image.addEventListener('error', () => {
+                const path = image.dataset.path;
+                if (!path || image.dataset.fallback) return;
+                image.dataset.fallback = '1';
+                image.src = `assets/photos/${path}`;
+            });
+        });
+
+        // Bound once: the hooks always target the current project's slides.
+        prevPeek.addEventListener('click', () => imageNavPrev && imageNavPrev());
+        nextPeek.addEventListener('click', () => imageNavNext && imageNavNext());
+
+        // The panel changes size with the viewport and the draggable sidebar.
+        if (typeof ResizeObserver === 'function') {
+            new ResizeObserver(positionPeeks).observe(mainDisplay);
+        }
+
         // Initialize the first project
         updateProject();
 
@@ -385,10 +498,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const aboutBtn = document.getElementById('about');
         const aboutText = document.getElementById('about-text');
         const cursorLine = document.getElementById('cursor-line');
-        const navigation = document.querySelector('.navigation');
         const photoInfo = document.getElementById('photo-info');
 
-        const normalModeElements = [projectGallery, mainDisplay, cursorLine, galleryNav, imageContainer, navigation, photoInfo];
+        const normalModeElements = [projectGallery, mainDisplay, cursorLine, galleryNav, imageContainer, photoInfo];
         const aboutModeElements = [aboutText, backBtn];
 
         aboutBtn.addEventListener('click', aboutBtnFunction);
@@ -435,14 +547,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalImages = project.images.length;
             const hasEndText = !!(project['end-text']);
             const totalSlides = totalImages + (hasEndText ? 1 : 0);
-            const featuredImg = document.getElementById('featured-image');
-            const endTextElem = document.getElementById('project-end-text');
             /*const photoTitle = document.getElementById('photo-title');*/
             const imageDesc = document.getElementById('photo-description');
 
             const imageCounter = document.getElementById('image-counter');
-            const prevBtn = document.getElementById('prev-btn');
-            const nextBtn = document.getElementById('next-btn');
 
             // Remove active class from all projects
             document.querySelectorAll('.project-title').forEach(title => {
@@ -457,10 +565,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             updateImage();
 
-            // Event listeners for buttons
-            prevBtn.addEventListener('click', showPrevImage, { signal: projectSignal });
-            nextBtn.addEventListener('click', showNextImage, { signal: projectSignal });
-            
             // Keyboard navigation
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'ArrowLeft') {
@@ -529,8 +633,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         imageDesc.textContent = image.description || '';
                     }
                 }
+                updatePeeks(project, image_index, hasEndText, totalImages);
                 updateCounter();
-                updateButtonVisibility();
+                positionPeeks();
+
+                // The photo's rendered box depends on its aspect ratio, so
+                // reposition the peeks once the new photo has been decoded.
+                if (!onEndText) {
+                    prevPeek.classList.add('is-loading');
+                    nextPeek.classList.add('is-loading');
+                    const settlePeeks = () => {
+                        prevPeek.classList.remove('is-loading');
+                        nextPeek.classList.remove('is-loading');
+                        positionPeeks();
+                    };
+                    featuredImg.addEventListener('load', settlePeeks, { once: true, signal: imageSignal });
+                    featuredImg.addEventListener('error', settlePeeks, { once: true, signal: imageSignal });
+                } else {
+                    // The text slide is laid out immediately: nothing to wait for.
+                    prevPeek.classList.remove('is-loading');
+                    nextPeek.classList.remove('is-loading');
+                }
 
                 function enterFullscreen() {
                     if (!document.fullscreenElement) {
@@ -561,7 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 */
 
                 mainDisplay.addEventListener('dblclick', (e) => {
-                    if (e.target.closest('.nav-btn')) return; // double-clicking the arrows must not toggle fullscreen
+                    if (e.target.closest('.peek')) return; // double-clicking a peek must not toggle fullscreen
                     if (!document.fullscreenElement) {
                         enterFullscreen();
                     } else {
@@ -591,22 +714,6 @@ document.addEventListener('DOMContentLoaded', () => {
             function updateCounter() {
                 imageIndices[project_index] = image_index; // Update the index for the current project
                 imageCounter.textContent = `${image_index + 1} / ${totalSlides}`;
-            }
-            // Update button visibility based on current index
-            function updateButtonVisibility() {
-                // Hide left button if at first image
-                if(image_index === 0) {
-                    prevBtn.classList.add('hidden_btn');
-                } else {
-                    prevBtn.classList.remove('hidden_btn');
-                }
-                // Hide right button if at last image (or on the end-text slide)
-                const lastIndex = hasEndText ? totalImages : totalImages - 1;
-                if(image_index === lastIndex) {
-                    nextBtn.classList.add('hidden_btn');
-                } else {
-                    nextBtn.classList.remove('hidden_btn');
-                }
             }
         }
 
