@@ -366,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Load the original off-screen. The thumbnail preview, or the previous
         // photo, stays visible until the file is ready to paint.
-        function loadFullPhoto(url) {
+        function loadFullPhoto(url, signal) {
             const image = new Image();
             image.decoding = 'async';
             pendingFullPhoto = image;
@@ -374,9 +374,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (pendingFullPhoto !== image) return;
                 pendingFullPhoto = null;
                 rememberPhoto(url, image);
-                clearPreviewSize();
                 featuredImg.src = url;
-                positionPeeks();
+                featuredImg.addEventListener('load', () => {
+                    clearPreviewSize();
+                    positionPeeks();
+                }, { once: true, signal });
             }, { once: true });
             image.addEventListener('error', () => {
                 if (pendingFullPhoto === image) pendingFullPhoto = null;
@@ -791,17 +793,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     const showingPreview = !prefetchedPhotos.has(photoUrl);
                     if (!showingPreview) {
                         // Ready at full quality: no preview frame at all.
-                        clearPreviewSize();
                         featuredImg.src = photoUrl;
                     } else {
                         // Show the small copy immediately, then upgrade it.
                         featuredImg.src = thumbUrl;
-                        loadFullPhoto(photoUrl);
+                        loadFullPhoto(photoUrl, imageSignal);
                     }
                     // The counter and the peeks follow the image that is
                     // actually painted: the preview, or the original if ready.
                     const revealSlide = () => {
-                        if (showingPreview) sizePreviewToContainer();
+                        if (showingPreview) {
+                            sizePreviewToContainer();
+                        } else {
+                            clearPreviewSize();
+                        }
                         syncSlide();
                     };
                     featuredImg.addEventListener('load', revealSlide, { once: true, signal: imageSignal });
