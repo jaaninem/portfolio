@@ -23,7 +23,8 @@
     --peek-width: clamp(26px, 3.2vw, 46px); /* Neighbour peek thumbnail width */
     --peek-text-width: calc(var(--peek-width) * 0.78); /* End-of-series "Fin" card width */
     --peek-gap: 10px; /* Space between the featured photo and its peeks */
-    --peek-opacity: 0.28; /* Resting opacity of the peeks */
+    --peek-spacing: 8px; /* Space between two thumbnails in the same strip */
+    --peek-opacity: 0.28; /* Resting opacity of the nearest peek */
 	/*--font-family: "SilkaMono", sans-serif;*/
 }
 
@@ -400,24 +401,54 @@ body {
 }
 
 
-/* Neighbour photo peeks: small, faint thumbnails of the adjacent slides that
-   stand in for the old arrow buttons. JS (positionPeeks) places them just
-   outside the featured photo's rendered box, inside the panel's white gutter. */
-.peek {
+/* Neighbour photo peeks: faint thumbnails of the adjacent slides, arranged as
+   a strip on each side of the featured photo. The strips stand in for the old
+   arrow buttons and grow outwards through the panel's white gutter, so the
+   featured photo keeps its size. JS (refreshPeeks) decides how many fit, fills
+   the strips and places them. */
+.peek-strip {
     position: absolute;
     top: 50%;
     left: 0; /* overwritten by script.js */
     z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: var(--peek-spacing);
+    transform: translateY(-50%);
+    pointer-events: none; /* only the thumbnails take clicks */
+}
+
+/* The strip grows leftwards: its first child (the nearest slide) sits against
+   the photo's left edge. */
+.peek-strip-prev {
+    flex-direction: row-reverse;
+}
+
+.peek-strip:empty {
+    display: none;
+}
+
+.peek {
+    flex: 0 0 auto;
     display: block;
     width: var(--peek-width);
     padding: 0;
     border: none;
     background: none;
     opacity: var(--peek-opacity);
-    transform: translateY(-50%);
     cursor: pointer;
+    pointer-events: auto;
     transition: opacity 0.18s ease-out, transform 0.18s ease-out;
     -webkit-tap-highlight-color: transparent;
+}
+
+/* Hidden probe: resolves the clamp() width of a peek to pixels for script.js */
+.peek-probe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .peek-img {
@@ -451,21 +482,27 @@ body {
     display: none;
 }
 
-/* No neighbour on that side */
-.peek.is-hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
+/* Each step away from the photo fades further, so the strip reads as depth */
+.peek-strip > .peek:nth-child(2) {
+    opacity: calc(var(--peek-opacity) * 0.68);
+}
+
+.peek-strip > .peek:nth-child(3) {
+    opacity: calc(var(--peek-opacity) * 0.46);
+}
+
+.peek-strip > .peek:nth-child(n + 4) {
+    opacity: calc(var(--peek-opacity) * 0.34);
 }
 
 @media (hover: hover) {
-    .peek:hover {
+    .peek-strip > .peek:hover {
         opacity: 0.85;
-        transform: translateY(-50%) scale(1.06);
+        transform: scale(1.06);
     }
 }
 
-.peek:focus-visible {
+.peek-strip > .peek:focus-visible {
     opacity: 0.9;
     outline: 1px solid rgba(0, 0, 0, 0.4);
     outline-offset: 4px;
@@ -545,6 +582,7 @@ body {
         --project-title-font-size: calc(var(--project-title-font-size-base) * var(--gallery-mobile-font-scale));
         --peek-width: clamp(20px, 6.5vw, 28px); /* narrower photo gutter on phones */
         --peek-gap: 6px;
+        --peek-spacing: 6px;
     }
 
     .container {

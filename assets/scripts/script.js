@@ -196,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Declared before updateProject() so the hooks can be assigned there.
         let imageNavNext = null;
         let imageNavPrev = null;
+        let imageNavGo = null; // jump straight to a slide index
         let touchStartX = 0;
         let touchStartY2 = 0;
         let isImageTouch = false;
@@ -228,50 +229,74 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // --- Neighbour photo peeks ----------------------------------------
-        // The panel shows one faint thumbnail of the previous slide and one of
-        // the next slide, sitting just outside the featured photo. They replace
-        // the old arrow buttons while wheel/swipe/keyboard navigation remains.
+        // Each side of the featured photo gets a strip of faint thumbnails for
+        // the adjacent slides. The strips sit in the panel's white gutter and
+        // hold as many thumbnails as fit, so the featured photo keeps its size.
         const featuredImg = document.getElementById('featured-image');
         const endTextElem = document.getElementById('project-end-text');
-        const prevPeek = document.getElementById('prev-peek');
-        const nextPeek = document.getElementById('next-peek');
+        const prevStrip = document.getElementById('prev-peeks');
+        const nextStrip = document.getElementById('next-peeks');
 
-        function peekImage(peek) {
-            return peek.querySelector('.peek-img');
+        const PEEK_MAX = 5; // upper bound of thumbnails per side
+        const PEEK_EDGE = 2; // minimum distance between a strip and the panel edge
+        const PEEK_MOBILE_QUERY = '(max-width: 768px)';
+
+        // Custom properties holding a clamp() keep their token text when read
+        // back, so measure a hidden probe element for the resolved width.
+        const peekProbe = document.createElement('div');
+        peekProbe.className = 'peek peek-probe';
+        peekProbe.setAttribute('aria-hidden', 'true');
+        mainDisplay.appendChild(peekProbe);
+
+        function peekMetrics() {
+            const styles = getComputedStyle(document.documentElement);
+            const read = (name, fallback) => {
+                const value = parseFloat(styles.getPropertyValue(name));
+                return Number.isFinite(value) ? value : fallback;
+            };
+            return {
+                width: peekProbe.getBoundingClientRect().width || 46,
+                gap: read('--peek-gap', 10),
+                spacing: read('--peek-spacing', 8),
+            };
         }
 
-        // Point a peek at a project image, preferring its generated thumbnail.
-        function showPeekImage(peek, imagePath, label) {
-            const image = peekImage(peek);
-            peek.classList.remove('is-text', 'is-hidden');
-            peek.setAttribute('aria-label', label);
-            peek.tabIndex = 0;
-            if (image.dataset.path !== imagePath) {
-                image.dataset.path = imagePath;
-                image.dataset.fallback = '';
-                image.alt = '';
-                image.src = `assets/thumbs/${imagePath}`;
+        // How many thumbnails fit between the photo's edge and the panel edge.
+        function peekCapacity(gutter, metrics) {
+            if (window.matchMedia(PEEK_MOBILE_QUERY).matches) return 1;
+            const usable = gutter - PEEK_EDGE - metrics.gap + metrics.spacing;
+            const fit = Math.floor(usable / (metrics.width + metrics.spacing));
+            return Math.min(PEEK_MAX, Math.max(1, fit));
+        }
+
+        // The slides up to `count` steps away on one side of the current one.
+        // The end-of-series slide becomes a text card and always ends the strip.
+        function peekItems(project, index, hasEndText, totalImages, direction, count) {
+            const lastSlide = hasEndText ? totalImages : totalImages - 1;
+            const items = [];
+            for (let step = 1; step <= count; step += 1) {
+                const slide = index + direction * step;
+                if (slide < 0 || slide > lastSlide) break;
+                if (hasEndText && slide === totalImages) {
+                    items.push({
+                        slide,
+                        text: true,
+                        label: step === 1 ? 'End of series' : `End of series (${step} ahead)`,
+                    });
+                    break;
+                }
+                items.push({
+                    slide,
+                    path: project.images[slide].image_path,
+                    label: direction < 0
+                        ? (step === 1 ? 'Previous photo' : `Previous photo (${step} back)`)
+                        : (step === 1 ? 'Next photo' : `Next photo (${step} ahead)`),
+                });
             }
+            return items;
         }
 
-        // Represent the end-of-series text slide as a tiny "Fin" card.
-        function showPeekText(peek, label) {
-            const image = peekImage(peek);
-            peek.classList.add('is-text');
-            peek.classList.remove('is-hidden');
-            peek.setAttribute('aria-label', label);
-            peek.tabIndex = 0;
-            image.removeAttribute('src');
-            image.dataset.path = '';
-        }
-
-        function hidePeek(peek) {
-            peek.classList.add('is-hidden');
-            peek.tabIndex = -1;
-        }
-
-        // Which slides sit on each side of the current one.
-        // `nextIsText` marks the end-of-series slide, which has no photo.
+        // Which slides sit on each side of the current one (prefetch only).
         function neighbourPaths(project, index, hasEndText, totalImages) {
             const lastSlide = hasEndText ? totalImages : totalImages - 1;
             return {
@@ -279,39 +304,137 @@ document.addEventListener('DOMContentLoaded', () => {
                 next: index < lastSlide && !(hasEndText && index === totalImages - 1)
                     ? project.images[index + 1].image_path
                     : null,
-                nextIsText: hasEndText && index === totalImages - 1,
             };
         }
 
-        // Show the peeks for the current slide, if it has neighbours.
-        function updatePeeks(project, index, hasEndText, totalImages) {
-            const neighbours = neighbourPaths(project, index, hasEndText, totalImages);
+        function createPeek() {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'peek';
+            const image = document.createElement('img');
+            image.className = 'peek-img';
+            image.alt = '';
+            image.decoding = 'async';
+            // A missing thumbnail (e.g. a freshly added photo) falls back to
+            // the full image instead of leaving a blank peek.
+            image.addEventListener('error', () => {
+                const path = image.dataset.path;
+                if (!path || image.dataset.fallback) return;
+                image.dataset.fallback = '1';
+                image.src = `assets/photos/${path}`;
+            });
+            const label = document.createElement('span');
+            label.className = 'peek-label';
+            label.setAttribute('aria-hidden', 'true');
+            label.textContent = 'Fin';
+            button.append(image, label);
+            return button;
+        }
 
-            if (neighbours.prev) {
-                showPeekImage(prevPeek, neighbours.prev, 'Previous photo');
-            } else {
-                hidePeek(prevPeek);
+        function applyPeek(button, item) {
+            button.dataset.slide = String(item.slide);
+            button.setAttribute('aria-label', item.label);
+            button.classList.toggle('is-text', !!item.text);
+            const image = button.querySelector('.peek-img');
+            if (item.text) {
+                image.removeAttribute('src');
+                image.dataset.path = '';
+                image.dataset.fallback = '';
+                return;
             }
-
-            if (neighbours.next) {
-                showPeekImage(nextPeek, neighbours.next, 'Next photo');
-            } else if (neighbours.nextIsText) {
-                showPeekText(nextPeek, 'End of series');
-            } else {
-                hidePeek(nextPeek);
+            if (image.dataset.path !== item.path) {
+                image.dataset.path = item.path;
+                image.dataset.fallback = '';
+                image.src = `assets/thumbs/${item.path}`;
             }
         }
 
-        // Warm the cache for the thumbnails a couple of steps around the
-        // current slide, so an immediate peek swap never shows an empty box.
-        function preloadPeekThumbnails(project, index, totalImages) {
+        // Reuse the existing buttons so a slide change only swaps their content.
+        function renderPeekStrip(strip, items) {
+            while (strip.children.length > items.length) {
+                strip.lastElementChild.remove();
+            }
+            items.forEach((item, position) => {
+                let button = strip.children[position];
+                if (!button) {
+                    button = createPeek();
+                    strip.appendChild(button);
+                }
+                applyPeek(button, item);
+            });
+        }
+
+        // Where the photo (or the end-text block) sits inside the panel.
+        function peekGeometry() {
+            const panelRect = mainDisplay.getBoundingClientRect();
+            const reference = featuredImg.style.display === 'none' ? endTextElem : featuredImg;
+            const referenceRect = reference.getBoundingClientRect();
+            if (!referenceRect.width) return null;
+            return {
+                panelWidth: panelRect.width,
+                referenceLeft: referenceRect.left - panelRect.left,
+                referenceRight: referenceRect.right - panelRect.left,
+            };
+        }
+        // Each strip sits as a unit just outside the photo, clamped inside the
+        // panel's white gutter. The photo is centred vertically, so only the
+        // horizontal position has to be computed.
+        function positionPeekStrips(geometry, metrics) {
+            if (prevStrip.children.length) {
+                const width = prevStrip.getBoundingClientRect().width;
+                prevStrip.style.left = `${Math.max(PEEK_EDGE, geometry.referenceLeft - metrics.gap - width)}px`;
+            }
+            if (nextStrip.children.length) {
+                const width = nextStrip.getBoundingClientRect().width;
+                const left = Math.min(
+                    geometry.panelWidth - width - PEEK_EDGE,
+                    geometry.referenceRight + metrics.gap
+                );
+                nextStrip.style.left = `${Math.max(PEEK_EDGE, left)}px`;
+            }
+        }
+
+        // The current slide's neighbour context, kept so the strips can be
+        // rebuilt when the panel is resized without a slide change.
+        let peekContext = null;
+
+        function refreshPeeks() {
+            if (!peekContext) return;
+            const geometry = peekGeometry();
+            if (!geometry) return;
+            const { project, index, hasEndText, totalImages } = peekContext;
+            const metrics = peekMetrics();
+            const counts = {
+                prev: peekCapacity(geometry.referenceLeft, metrics),
+                next: peekCapacity(geometry.panelWidth - geometry.referenceRight, metrics),
+            };
+            renderPeekStrip(prevStrip, peekItems(project, index, hasEndText, totalImages, -1, counts.prev));
+            renderPeekStrip(nextStrip, peekItems(project, index, hasEndText, totalImages, 1, counts.next));
+            positionPeekStrips(geometry, metrics);
+            preloadPeekThumbnails(project, index, totalImages, Math.max(counts.prev, counts.next));
+        }
+
+        // Show the peeks for the current slide: remember the context, then build.
+        function updatePeeks(project, index, hasEndText, totalImages) {
+            peekContext = { project, index, hasEndText, totalImages };
+            refreshPeeks();
+        }
+
+        // Warm the cache for every thumbnail the strips can show, so an update
+        // never leaves an empty box.
+        const preloadedThumbs = new Set();
+        function preloadPeekThumbnails(project, index, totalImages, lookahead) {
             const lastPhoto = totalImages - 1;
-            for (let position = index - 2; position <= index + 2; position += 1) {
+            for (let position = index - lookahead; position <= index + lookahead; position += 1) {
                 if (position < 0 || position > lastPhoto) continue;
+                const url = `assets/thumbs/${project.images[position].image_path}`;
+                if (preloadedThumbs.has(url)) continue;
+                preloadedThumbs.add(url);
                 const thumbnail = new Image();
                 thumbnail.decoding = 'async';
-                thumbnail.src = `assets/thumbs/${project.images[position].image_path}`;
+                thumbnail.src = url;
             }
+            if (preloadedThumbs.size > 200) preloadedThumbs.clear();
         }
 
         // Originals known to be loaded, so a slide change can paint the full
@@ -377,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 featuredImg.src = url;
                 featuredImg.addEventListener('load', () => {
                     clearPreviewSize();
-                    positionPeeks();
+                    refreshPeeks();
                 }, { once: true, signal });
             }, { once: true });
             image.addEventListener('error', () => {
@@ -421,55 +544,21 @@ document.addEventListener('DOMContentLoaded', () => {
             previewSized = false;
         }
 
-        // Keep each peek just outside the featured photo, clamped inside the
-        // panel's white gutter. The photo is centred vertically, so only the
-        // horizontal position has to be computed.
-        function positionPeeks() {
-            const panelRect = mainDisplay.getBoundingClientRect();
-            const onEndText = featuredImg.style.display === 'none';
-            const reference = onEndText ? endTextElem : featuredImg;
-            const referenceRect = reference.getBoundingClientRect();
-            const gap = parseFloat(
-                getComputedStyle(document.documentElement).getPropertyValue('--peek-gap')
-            ) || 10;
-            const edge = 2; // minimum distance from the panel edge
-            const referenceLeft = referenceRect.width ? referenceRect.left - panelRect.left : 0;
-            const referenceRight = referenceRect.width
-                ? referenceRect.right - panelRect.left
-                : panelRect.width;
-
-            if (!prevPeek.classList.contains('is-hidden')) {
-                const width = prevPeek.offsetWidth;
-                prevPeek.style.left = `${Math.max(edge, referenceLeft - gap - width)}px`;
-            }
-            if (!nextPeek.classList.contains('is-hidden')) {
-                const width = nextPeek.offsetWidth;
-                const left = Math.min(panelRect.width - width - edge, referenceRight + gap);
-                nextPeek.style.left = `${Math.max(edge, left)}px`;
-            }
-        }
-
-        // A missing thumbnail (e.g. a freshly added photo) falls back to the
-        // full image instead of leaving a blank peek.
-        [prevPeek, nextPeek].forEach(peek => {
-            const image = peekImage(peek);
-            image.addEventListener('error', () => {
-                const path = image.dataset.path;
-                if (!path || image.dataset.fallback) return;
-                image.dataset.fallback = '1';
-                image.src = `assets/photos/${path}`;
+        // Bound once: a click anywhere on a strip jumps straight to that slide.
+        [prevStrip, nextStrip].forEach(strip => {
+            strip.addEventListener('click', (event) => {
+                const button = event.target.closest('.peek');
+                if (!button) return;
+                const slide = Number(button.dataset.slide);
+                if (Number.isInteger(slide) && imageNavGo) imageNavGo(slide);
             });
         });
-
-        // Bound once: the hooks always target the current project's slides.
-        prevPeek.addEventListener('click', () => imageNavPrev && imageNavPrev());
-        nextPeek.addEventListener('click', () => imageNavNext && imageNavNext());
 
         // The panel changes size with the viewport and the draggable sidebar.
         if (typeof ResizeObserver === 'function') {
             new ResizeObserver(() => {
-                positionPeeks();
                 if (previewSized) sizePreviewToContainer();
+                refreshPeeks();
             }).observe(mainDisplay);
         }
 
@@ -721,25 +810,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }, { signal: projectSignal });
 
+            // Jump straight to a slide (clamped to the project's slides)
+            function showSlide(target) {
+                const lastSlide = hasEndText ? totalImages : totalImages - 1;
+                if (target < 0 || target > lastSlide || target === image_index) return;
+                image_index = target;
+                updateImage();
+            }
+
             // Show previous image
             function showPrevImage() {
-                if (image_index > 0) {
-                    image_index -= 1;
-                    updateImage();
-                }
+                showSlide(image_index - 1);
             }
-            
+
             // Show next image (or the end-text slide)
             function showNextImage() {
-                const maxIndex = hasEndText ? totalImages : totalImages - 1;
-                if (image_index < maxIndex) {
-                    image_index += 1;
-                    updateImage();
-                }
+                showSlide(image_index + 1);
             }
-            // Keep the touch-swipe hooks pointing at this project's navigation
+            // Keep the touch-swipe and peek hooks pointing at this project's navigation
             imageNavNext = showNextImage;
             imageNavPrev = showPrevImage;
+            imageNavGo = showSlide;
 
             function updateImage(){
                 // Replace listeners from the previous image render so none stack up
@@ -778,7 +869,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const slideIndex = image_index;
                 const syncSlide = () => {
                     updatePeeks(project, slideIndex, hasEndText, totalImages);
-                    positionPeeks();
                     imageCounter.textContent = `${slideIndex + 1} / ${totalSlides}`;
                 };
                 if (onEndText) {
@@ -788,7 +878,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const image = project.images[slideIndex];
                     const thumbUrl = `assets/thumbs/${image.image_path}`;
                     const photoUrl = `assets/photos/${image.image_path}`;
-                    preloadPeekThumbnails(project, slideIndex, totalImages);
 
                     const showingPreview = !prefetchedPhotos.has(photoUrl);
                     if (!showingPreview) {

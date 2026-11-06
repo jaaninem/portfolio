@@ -40,16 +40,10 @@
                 <img id="featured-image" src="" alt="Featured Photo">
                 <div id="project-end-text" class="hidden"></div>
             </div>
-            <!-- Neighbour photo peeks: faint thumbnails of the adjacent slides,
-                 positioned outside the featured photo by script.js -->
-            <button class="peek peek-prev is-hidden" id="prev-peek" type="button" aria-label="Previous photo">
-                <img class="peek-img" alt="">
-                <span class="peek-label" aria-hidden="true">Fin</span>
-            </button>
-            <button class="peek peek-next is-hidden" id="next-peek" type="button" aria-label="Next photo">
-                <img class="peek-img" alt="">
-                <span class="peek-label" aria-hidden="true">Fin</span>
-            </button>
+            <!-- Neighbour photo peeks: strips of faint thumbnails for the adjacent
+                 slides, filled and positioned by script.js in the white gutter -->
+            <div class="peek-strip peek-strip-prev" id="prev-peeks" role="group" aria-label="Previous photos"></div>
+            <div class="peek-strip peek-strip-next" id="next-peeks" role="group" aria-label="Next photos"></div>
             <div id="photo-info">
                 <div class="counter" id="image-counter"></div>
                 <p id="photo-description"></p>
