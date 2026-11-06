@@ -78,7 +78,7 @@ Data notes as of this writing:
 
 - `assets/scripts/script.js` fetches `assets/photos/manifest.json` once at startup. A failed request becomes an empty list.
 - `expandProjectImages()` matches `*` and `?` patterns against the manifest and resolves unique bare basenames.
-- The peeks and the instant preview load `assets/thumbs/<image_path>`. A peek retries once with `assets/photos/<image_path>` on error, so a missing thumbnail degrades to the full image instead of a blank peek.
+- The peek strips and the instant preview load `assets/thumbs/<image_path>`. A peek retries once with `assets/photos/<image_path>` on error, so a missing thumbnail degrades to the full image instead of a blank peek. A strip can request several thumbnails at once when the panel is wide enough.
 
 ## Adding a photo
 

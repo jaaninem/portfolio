@@ -71,7 +71,7 @@ The generator is documented in [modules/photo-pipeline.md](modules/photo-pipelin
 
 ## Thumbnails
 
-`assets/thumbs/` mirrors `assets/photos/` and holds thumbnails capped at 300 px wide with the original aspect ratio. The neighbour peeks load them, and so does the instant preview shown while an original downloads. The preview is upscaled to the photo's box, so it looks soft until the original arrives; a prefetched original skips the preview entirely. If a thumbnail is missing, the peek falls back to the full photo once.
+`assets/thumbs/` mirrors `assets/photos/` and holds thumbnails capped at 300 px wide with the original aspect ratio. The neighbour peek strips load them, and so does the instant preview shown while an original downloads. The preview is upscaled to the photo's box, so it looks soft until the original arrives; a prefetched original skips the preview entirely. If a thumbnail is missing, the peek falls back to the full photo once.
 
 Thumbnails are produced by `assets/scripts/script.py` (`THUMB_WIDTH = 300`). Note that the generator's `generate_thumbnails()` call is commented out in the script's entry point, so a plain run only refreshes the manifest.
 
@@ -94,8 +94,9 @@ Defined in `:root` in `assets/css/styles.css`; the mobile overrides sit in the `
 | `--gallery-elements-animation` | `fadeIn 0.5s ease` | Fade used when gallery elements appear |
 | `--peek-width` | `clamp(26px, 3.2vw, 46px)` | Neighbour peek width; mobile: `clamp(20px, 6.5vw, 28px)` |
 | `--peek-text-width` | `calc(var(--peek-width) * 0.78)` | Width of the `Fin` card |
-| `--peek-gap` | `10px` | Space between the photo and a peek; mobile: `6px` |
-| `--peek-opacity` | `0.28` | Resting opacity of the peeks |
+| `--peek-gap` | `10px` | Space between the photo and the nearest peek; mobile: `6px` |
+| `--peek-spacing` | `8px` | Space between two thumbnails in the same strip; mobile: `6px` |
+| `--peek-opacity` | `0.28` | Resting opacity of the nearest peek; each further step fades more |
 
 Changing `--project-title-font-size-base` or `--gallery-mobile-font-scale` also changes the scroll step, because `--project-title-height` derives from the title size. The JavaScript re-reads the rendered title height on resize.
 
@@ -111,7 +112,9 @@ These are constants in `assets/scripts/script.js`, not user-facing settings:
 | Image swipe threshold | `50` px | Horizontal swipe distance on the photo |
 | Project swipe threshold | `30` px | Vertical swipe distance on the gallery panel |
 | Tap threshold | `10` px | Below this a touch is a tap, not a swipe |
-| Peek edge inset | `2` px | Minimum distance between a peek and the panel edge |
+| Peek edge inset (`PEEK_EDGE`) | `2` px | Minimum distance between a strip and the panel edge |
+| Peek strip cap (`PEEK_MAX`) | `5` | Maximum thumbnails per side on desktop |
+| Mobile peek breakpoint | `(max-width: 768px)` | Below this each strip shows exactly one thumbnail |
 | `PREFETCH_DELAY` | `300` ms | Idle time before the neighbouring originals are fetched |
 | `PREFETCH_LIMIT` | `6` | Loaded originals kept in the in-document prefetch cache |
 

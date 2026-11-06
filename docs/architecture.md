@@ -13,7 +13,7 @@ All behaviour is in `assets/scripts/script.js`. There is no framework, bundler o
 
 | Path | Role |
 | --- | --- |
-| `index.html` | Page markup, About copy, peek buttons, script includes |
+| `index.html` | Page markup, About copy, peek strips, script includes |
 | `assets/css/styles.css` | Layout, typography, transitions, responsive rules |
 | `assets/scripts/script.js` | Data loading, rendering, navigation, peeks, About mode |
 | `galleries/galleries.js` | `GALLERIES` list shown in the top bar |
@@ -76,23 +76,30 @@ The sidebar width and the mobile panel height are CSS variables, documented in [
   - wheel on the photo panel, with a 100 px accumulated threshold;
   - horizontal touch swipe, 50 px threshold;
   - `ArrowLeft` and `ArrowRight`;
-  - clicking the neighbour peek on either side.
+  - clicking any neighbour peek, which jumps straight to that slide.
 - Double-clicking the photo panel or pressing `f` requests fullscreen on the image; `Escape` or `f` exits. Double-clicks on a peek are ignored.
 - An optional `description` on an image is written to `#photo-description`.
 
 ## Neighbour peeks
 
-The old arrow buttons were replaced by one faint thumbnail per side, implemented by `#prev-peek` and `#next-peek` in `index.html`.
+Each side of the featured photo has a strip of faint thumbnails for the neighbouring slides, implemented by `#prev-peeks` and `#next-peeks` in `index.html`. The strips sit in the panel's white gutter, so they never change the featured photo's size; how many thumbnails each one holds depends on the space available.
 
-- `updatePeeks()` decides what each peek shows:
-  - left: the image before the current one, when there is one;
-  - right: the next image, or a small `Fin` card when the next slide is the project's end-text slide;
-  - no neighbour on a side means the peek is hidden and removed from the tab order.
-- Peek images use `assets/thumbs/<image_path>`. If a thumbnail is missing, the `error` listener retries once with `assets/photos/<image_path>`.
-- `positionPeeks()` measures the featured photo's rendered box and sets each peek's horizontal position outside it, using `--peek-gap`. On the end-text slide the text block is the reference instead. Peeks are clamped 2 px inside the panel so they never run off the edge.
-- The peek content and the counter change with the visible slide: that is the thumbnail preview or the prefetched original, so a swipe shows its result immediately. The thumbnails for two steps around the current slide are preloaded, so the swap does not leave an empty peek box.
-- Positions are recomputed through a `ResizeObserver` on `#main-display` (viewport changes, orientation changes, sidebar drag), and when the visible source settles its box.
-- Sizes and opacity come from CSS variables; the mobile block shrinks both. See [config.md](config.md).
+- `refreshPeeks()` measures the gutter on each side of the featured photo and computes a capacity:
+  - `floor((gutter - 2 px - gap + spacing) / (peek width + spacing))`, capped at five per side;
+  - exactly one thumbnail per side below the 768 px mobile breakpoint;
+  - at least one per side, as before, even when the gap has to compress.
+- `peekItems()` walks outwards from the current slide and returns up to that many slides per side:
+  - left: the images before the current one;
+  - right: the images after it, ending with a small `Fin` card when the project's end-text slide is within reach;
+  - a side with no neighbour gets an empty strip, which is hidden and has no tab stops.
+- The strips are reused between slides: `renderPeekStrip()` swaps the content of the existing buttons instead of rebuilding them, so a slide change does not flash.
+- The previous strip lays out in `row-reverse`, so its first child (the nearest slide) sits against the photo's left edge. The whole strip is centred vertically.
+- Thumbnails use `assets/thumbs/<image_path>`. If a thumbnail is missing, the `error` listener retries once with `assets/photos/<image_path>`.
+- Each step away from the photo is fainter, through the `--peek-opacity` falloff in CSS. Hover and keyboard focus raise a thumbnail to full strength.
+- Clicking any thumbnail jumps straight to that slide (`showSlide(target)`); it does not step one at a time. The counter and both strips follow the new slide.
+- `peekGeometry()` is recomputed through a `ResizeObserver` on `#main-display` (viewport changes, orientation changes, sidebar drag) and when the visible source settles its box, so the capacity and positions follow the panel.
+- The thumbnails the strips can show are preloaded from `assets/thumbs/`, so a strip update does not leave an empty box.
+- Sizes, spacing and opacity come from CSS variables; the mobile block shrinks all of them. See [config.md](config.md).
 
 ## Navigation inputs
 
@@ -104,7 +111,7 @@ The old arrow buttons were replaced by one faint thumbnail per side, implemented
 | Horizontal swipe | Photo panel | Previous or next slide |
 | `ArrowUp` / `ArrowDown` | Page | Previous or next project |
 | `ArrowLeft` / `ArrowRight` | Page | Previous or next slide |
-| Peek click | Photo panel edges | Previous or next slide |
+| Peek click | Photo panel edges | Jump to the clicked slide |
 | Gallery name click | Top bar | Load another gallery file |
 | Project title click | Gallery panel | Select that project |
 | Double-click, `f` | Photo panel | Toggle fullscreen |
