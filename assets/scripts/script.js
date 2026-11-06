@@ -302,16 +302,121 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Warm the cache so the new peeks can be painted in the same frame as
-        // the photo, without an empty box while their thumbnail downloads.
-        function preloadPeekThumbnails(project, index, hasEndText, totalImages) {
-            const neighbours = neighbourPaths(project, index, hasEndText, totalImages);
-            [neighbours.prev, neighbours.next].forEach(path => {
-                if (!path) return;
+        // Warm the cache for the thumbnails a couple of steps around the
+        // current slide, so an immediate peek swap never shows an empty box.
+        function preloadPeekThumbnails(project, index, totalImages) {
+            const lastPhoto = totalImages - 1;
+            for (let position = index - 2; position <= index + 2; position += 1) {
+                if (position < 0 || position > lastPhoto) continue;
                 const thumbnail = new Image();
                 thumbnail.decoding = 'async';
-                thumbnail.src = `assets/thumbs/${path}`;
-            });
+                thumbnail.src = `assets/thumbs/${project.images[position].image_path}`;
+            }
+        }
+
+        // Originals known to be loaded, so a slide change can paint the full
+        // photo directly instead of a thumbnail preview.
+        const PREFETCH_LIMIT = 6;
+        const PREFETCH_DELAY = 300; // ms of calm before fetching neighbours
+        const prefetchedPhotos = new Map();
+        const prefetchingPhotos = new Set();
+        let prefetchTimer = 0;
+        let pendingFullPhoto = null;
+        let previewSized = false;
+
+        function rememberPhoto(url, image) {
+            prefetchingPhotos.delete(url);
+            prefetchedPhotos.set(url, image);
+            while (prefetchedPhotos.size > PREFETCH_LIMIT) {
+                prefetchedPhotos.delete(prefetchedPhotos.keys().next().value);
+            }
+        }
+
+        // Download an original in the background with low priority, so the
+        // next slide can usually be painted at full quality straight away.
+        function prefetchPhoto(url) {
+            if (!url || prefetchedPhotos.has(url) || prefetchingPhotos.has(url)) return;
+            prefetchingPhotos.add(url);
+            const image = new Image();
+            image.decoding = 'async';
+            image.fetchPriority = 'low';
+            image.addEventListener('load', () => rememberPhoto(url, image), { once: true });
+            image.addEventListener('error', () => prefetchingPhotos.delete(url), { once: true });
+            image.src = url;
+        }
+
+        // Fetch the originals on both sides once the user pauses, so rapid
+        // swipes do not download slides that are skipped.
+        function scheduleNeighbourPrefetch(project, index, hasEndText, totalImages) {
+            clearTimeout(prefetchTimer);
+            prefetchTimer = setTimeout(() => {
+                const neighbours = neighbourPaths(project, index, hasEndText, totalImages);
+                [neighbours.prev, neighbours.next].forEach(path => {
+                    if (path) prefetchPhoto(`assets/photos/${path}`);
+                });
+            }, PREFETCH_DELAY);
+        }
+
+        function cancelPendingFullPhoto() {
+            if (!pendingFullPhoto) return;
+            const image = pendingFullPhoto;
+            pendingFullPhoto = null;
+            image.src = '';
+        }
+
+        // Load the original off-screen. The thumbnail preview, or the previous
+        // photo, stays visible until the file is ready to paint.
+        function loadFullPhoto(url) {
+            const image = new Image();
+            image.decoding = 'async';
+            pendingFullPhoto = image;
+            image.addEventListener('load', () => {
+                if (pendingFullPhoto !== image) return;
+                pendingFullPhoto = null;
+                rememberPhoto(url, image);
+                clearPreviewSize();
+                featuredImg.src = url;
+                positionPeeks();
+            }, { once: true });
+            image.addEventListener('error', () => {
+                if (pendingFullPhoto === image) pendingFullPhoto = null;
+            }, { once: true });
+            image.src = url;
+        }
+
+        // A 300 px thumbnail keeps its natural size under the photo's
+        // max-width/max-height rules, so it would appear smaller than the
+        // original. Size it to the box the original will occupy instead.
+        function sizePreviewToContainer() {
+            if (!featuredImg.naturalWidth || !featuredImg.naturalHeight) return;
+            const styles = getComputedStyle(imageContainer);
+            const boxWidth = imageContainer.clientWidth
+                - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+            const boxHeight = imageContainer.clientHeight
+                - parseFloat(styles.paddingTop) - parseFloat(styles.paddingBottom);
+            const imageStyles = getComputedStyle(featuredImg);
+            const resolve = (value, base) => {
+                if (!value || value === 'none') return Infinity;
+                return value.endsWith('%') ? base * parseFloat(value) / 100 : parseFloat(value);
+            };
+            const maxWidth = resolve(imageStyles.maxWidth, boxWidth);
+            const maxHeight = resolve(imageStyles.maxHeight, boxHeight);
+            const aspect = featuredImg.naturalWidth / featuredImg.naturalHeight;
+            let width = maxWidth;
+            let height = width / aspect;
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspect;
+            }
+            featuredImg.style.width = `${width}px`;
+            featuredImg.style.height = `${height}px`;
+            previewSized = true;
+        }
+
+        function clearPreviewSize() {
+            featuredImg.style.width = '';
+            featuredImg.style.height = '';
+            previewSized = false;
         }
 
         // Keep each peek just outside the featured photo, clamped inside the
@@ -360,7 +465,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // The panel changes size with the viewport and the draggable sidebar.
         if (typeof ResizeObserver === 'function') {
-            new ResizeObserver(positionPeeks).observe(mainDisplay);
+            new ResizeObserver(() => {
+                positionPeeks();
+                if (previewSized) sizePreviewToContainer();
+            }).observe(mainDisplay);
         }
 
         // Initialize the first project
@@ -643,6 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const onEndText = hasEndText && image_index === totalImages;
                 if (onEndText) {
                     featuredImg.style.display = 'none';
+                    clearPreviewSize();
                     endTextElem.classList.remove('hidden');
                     endTextElem.textContent = project['end-text'];
                 } else {
@@ -651,7 +760,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const image = project.images[image_index];
                     if (project) {
                         console.log('Selected project:', project);
-                        featuredImg.src = `assets/photos/${image.image_path}`;
                         /*featuredImg.alt = project['project-title'];*/
                         imageDesc.textContent = image.description || '';
                     }
@@ -659,11 +767,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Store the position immediately so switching projects before
                 // the photo loads keeps the selection.
                 imageIndices[project_index] = image_index;
+                clearTimeout(prefetchTimer);
+                cancelPendingFullPhoto();
 
-                // The counter, the peeks and the photo change at the same
-                // moment: when the new photo is ready (or immediately for the
-                // text slide). The peeks always describe the photo on screen,
-                // and the counter never runs ahead of it.
+                // The counter and the peeks change with the visible slide. On a
+                // photo slide that is either the prefetched original or the
+                // cached thumbnail acting as an instant preview.
                 const slideIndex = image_index;
                 const syncSlide = () => {
                     updatePeeks(project, slideIndex, hasEndText, totalImages);
@@ -674,9 +783,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     // The text slide is laid out immediately: nothing to wait for.
                     syncSlide();
                 } else {
-                    preloadPeekThumbnails(project, slideIndex, hasEndText, totalImages);
-                    featuredImg.addEventListener('load', syncSlide, { once: true, signal: imageSignal });
-                    featuredImg.addEventListener('error', syncSlide, { once: true, signal: imageSignal });
+                    const image = project.images[slideIndex];
+                    const thumbUrl = `assets/thumbs/${image.image_path}`;
+                    const photoUrl = `assets/photos/${image.image_path}`;
+                    preloadPeekThumbnails(project, slideIndex, totalImages);
+
+                    const showingPreview = !prefetchedPhotos.has(photoUrl);
+                    if (!showingPreview) {
+                        // Ready at full quality: no preview frame at all.
+                        clearPreviewSize();
+                        featuredImg.src = photoUrl;
+                    } else {
+                        // Show the small copy immediately, then upgrade it.
+                        featuredImg.src = thumbUrl;
+                        loadFullPhoto(photoUrl);
+                    }
+                    // The counter and the peeks follow the image that is
+                    // actually painted: the preview, or the original if ready.
+                    const revealSlide = () => {
+                        if (showingPreview) sizePreviewToContainer();
+                        syncSlide();
+                    };
+                    featuredImg.addEventListener('load', revealSlide, { once: true, signal: imageSignal });
+                    featuredImg.addEventListener('error', revealSlide, { once: true, signal: imageSignal });
+                    scheduleNeighbourPrefetch(project, slideIndex, hasEndText, totalImages);
                 }
 
                 function enterFullscreen() {
