@@ -1,7 +1,6 @@
 # Configuration
 
-All configuration lives in files, there are no environment variables and no
-runtime settings. This page lists what can be changed and what each value does.
+All configuration lives in files, there are no environment variables and no runtime settings. This page lists what can be changed and what each value does.
 
 ## Gallery list
 
@@ -15,15 +14,13 @@ const GALLERIES = [
 
 - `name` is the label in the top bar.
 - `file` is a path relative to `index.html`.
-- The first entry loads at start. Clicking a name fetches that file and renders
-  it in place, resetting the project and image selection.
+- The first entry loads at start. Clicking a name fetches that file and renders it in place, resetting the project and image selection.
 
 Only one gallery is currently configured.
 
 ## Gallery JSON
 
-Each gallery file is an array of projects. `galleries/main.json` follows this
-shape:
+Each gallery file is an array of projects. `galleries/main.json` follows this shape:
 
 ```json
 [
@@ -51,24 +48,18 @@ shape:
 
 ### Image paths
 
-`image_path` is resolved by `expandProjectImages()` in
-`assets/scripts/script.js`:
+`image_path` is resolved by `expandProjectImages()` in `assets/scripts/script.js`:
 
-- `*` matches any sequence of characters and `?` matches one character. Patterns
-  are compared with both the full relative path and the file's basename.
+- `*` matches any sequence of characters and `?` matches one character. Patterns are compared with both the full relative path and the file's basename.
 - A literal path that exists in `assets/photos/manifest.json` is used unchanged.
-- A literal basename without a folder is resolved when exactly one manifest entry
-  has that basename.
+- A literal basename without a folder is resolved when exactly one manifest entry has that basename.
 - Anything else is kept as written, which normally results in a broken image.
 
-The manifest is what makes globs and bare basenames work. If it fails to load,
-the front end falls back to an empty list and only literal full paths resolve.
+The manifest is what makes globs and bare basenames work. If it fails to load, the front end falls back to an empty list and only literal full paths resolve.
 
 ## Photo manifest
 
-`assets/photos/manifest.json` is a generated, sorted JSON array of relative POSIX
-paths such as `"Dunes/2425_S2_Agbayani_Janine_MiseEnScene_01.jpg"`. It is read at
-startup and never edited by hand.
+`assets/photos/manifest.json` is a generated, sorted JSON array of relative POSIX paths such as `"Dunes/2425_S2_Agbayani_Janine_MiseEnScene_01.jpg"`. It is read at startup and never edited by hand.
 
 Regenerate it with:
 
@@ -76,23 +67,17 @@ Regenerate it with:
 python3 assets/scripts/script.py
 ```
 
-The generator is documented in
-[modules/photo-pipeline.md](modules/photo-pipeline.md).
+The generator is documented in [modules/photo-pipeline.md](modules/photo-pipeline.md).
 
 ## Thumbnails
 
-`assets/thumbs/` mirrors `assets/photos/` and holds thumbnails capped at 300 px
-wide with the original aspect ratio. The neighbour peeks load them; if a
-thumbnail is missing, the peek falls back to the full photo once.
+`assets/thumbs/` mirrors `assets/photos/` and holds thumbnails capped at 300 px wide with the original aspect ratio. The neighbour peeks load them, and so does the instant preview shown while an original downloads. The preview is upscaled to the photo's box, so it looks soft until the original arrives; a prefetched original skips the preview entirely. If a thumbnail is missing, the peek falls back to the full photo once.
 
-Thumbnails are produced by `assets/scripts/script.py` (`THUMB_WIDTH = 300`).
-Note that the generator's `generate_thumbnails()` call is commented out in the
-script's entry point, so a plain run only refreshes the manifest.
+Thumbnails are produced by `assets/scripts/script.py` (`THUMB_WIDTH = 300`). Note that the generator's `generate_thumbnails()` call is commented out in the script's entry point, so a plain run only refreshes the manifest.
 
 ## CSS variables
 
-Defined in `:root` in `assets/css/styles.css`; the mobile overrides sit in the
-`@media (max-width: 768px)` block of the same file.
+Defined in `:root` in `assets/css/styles.css`; the mobile overrides sit in the `@media (max-width: 768px)` block of the same file.
 
 | Variable | Default | Effect |
 | --- | --- | --- |
@@ -112,10 +97,7 @@ Defined in `:root` in `assets/css/styles.css`; the mobile overrides sit in the
 | `--peek-gap` | `10px` | Space between the photo and a peek; mobile: `6px` |
 | `--peek-opacity` | `0.28` | Resting opacity of the peeks |
 
-Changing `--project-title-font-size-base` or
-`--gallery-mobile-font-scale` also changes the scroll step, because
-`--project-title-height` derives from the title size. The JavaScript re-reads the
-rendered title height on resize.
+Changing `--project-title-font-size-base` or `--gallery-mobile-font-scale` also changes the scroll step, because `--project-title-height` derives from the title size. The JavaScript re-reads the rendered title height on resize.
 
 ## Front-end tuning constants
 
@@ -130,15 +112,13 @@ These are constants in `assets/scripts/script.js`, not user-facing settings:
 | Project swipe threshold | `30` px | Vertical swipe distance on the gallery panel |
 | Tap threshold | `10` px | Below this a touch is a tap, not a swipe |
 | Peek edge inset | `2` px | Minimum distance between a peek and the panel edge |
+| `PREFETCH_DELAY` | `300` ms | Idle time before the neighbouring originals are fetched |
+| `PREFETCH_LIMIT` | `6` | Loaded originals kept in the in-document prefetch cache |
 
-`readProjectHeight()` uses `60` as a fallback before the titles are rendered; it
-is replaced by the measured value on the first render.
+`readProjectHeight()` uses `60` as a fallback before the titles are rendered; it is replaced by the measured value on the first render.
 
 ## Runtime requirements
 
-- The site has to be served over HTTP; `fetch()` of the gallery JSON and the
-  manifest fails when `index.html` is opened from disk.
-- The paths in `galleries.js`, the gallery JSON and `assets/scripts/script.py`
-  are all relative to the repository root.
-- No build step or dependency installation is needed to view the site. The photo
-  pipeline needs Python with Pillow.
+- The site has to be served over HTTP; `fetch()` of the gallery JSON and the manifest fails when `index.html` is opened from disk.
+- The paths in `galleries.js`, the gallery JSON and `assets/scripts/script.py` are all relative to the repository root.
+- No build step or dependency installation is needed to view the site. The photo pipeline needs Python with Pillow.

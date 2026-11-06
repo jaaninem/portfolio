@@ -1,14 +1,11 @@
 # Photo pipeline (`assets/scripts/script.py`)
 
-The only build-like tool in the repository. It walks the photo folders and
-produces two kinds of data used by the site: the manifest and the thumbnails.
+The only build-like tool in the repository. It walks the photo folders and produces two kinds of data used by the site: the manifest and the thumbnails.
 
 ## Responsibilities
 
-1. `assets/photos/manifest.json`: the sorted list of every available photo. The
-   front end uses it to expand glob patterns and resolve bare filenames.
-2. `assets/thumbs/`: a mirrored folder tree of thumbnails used by the neighbour
-   peeks.
+1. `assets/photos/manifest.json`: the sorted list of every available photo. The front end uses it to expand glob patterns and resolve bare filenames.
+2. `assets/thumbs/`: a mirrored folder tree of thumbnails used by the neighbour peeks and the instant preview.
 
 ## Data layout
 
@@ -28,8 +25,7 @@ assets/thumbs/                 mirrors the folder tree
   skyline.png, sunrise.png, waves.png, unsplash.jpg
 ```
 
-Thumbnails keep the original filename and extension. The manifest contains only
-photos, never thumbnails.
+Thumbnails keep the original filename and extension. The manifest contains only photos, never thumbnails.
 
 ## Functions
 
@@ -37,20 +33,15 @@ photos, never thumbnails.
 
 - Walks `photo_dir` and processes `.jpg`, `.jpeg`, `.png`, `.gif` and `.webp`.
 - Recreates the relative path under `thumb_dir`.
-- Resizes with `PIL.Image.thumbnail(..., LANCZOS)`, which preserves the aspect
-  ratio, caps the width at `thumb_width` and does not upscale smaller images.
+- Resizes with `PIL.Image.thumbnail(..., LANCZOS)`, which preserves the aspect ratio, caps the width at `thumb_width` and does not upscale smaller images.
 - Saves the result under the same filename and extension.
-- Skips any thumbnail that already exists, so an outdated thumbnail is never
-  replaced. Delete it first to regenerate it.
-- Prints one line per processed or skipped file and swallows per-file errors with
-  a printed message.
+- Skips any thumbnail that already exists, so an outdated thumbnail is never replaced. Delete it first to regenerate it.
+- Prints one line per processed or skipped file and swallows per-file errors with a printed message.
 
 ### `generate_manifest(photo_dir=PHOTO_DIR)`
 
-- Walks `photo_dir`, collects every supported image as a path relative to
-  `photo_dir`, normalises separators to `/` and sorts the list.
-- Writes `assets/photos/manifest.json` with tab indentation and prints the file
-  count.
+- Walks `photo_dir`, collects every supported image as a path relative to `photo_dir`, normalises separators to `/` and sorts the list.
+- Writes `assets/photos/manifest.json` with tab indentation and prints the file count.
 
 ## Command line
 
@@ -75,37 +66,25 @@ Pillow is required. The script has no other dependencies.
 
 ## Current state
 
-The `if __name__ == "__main__"` block parses the flags but only calls
-`generate_manifest()`. The `generate_thumbnails()` call is commented out, so
-thumbnails are not refreshed by a plain run.
+The `if __name__ == "__main__"` block parses the flags but only calls `generate_manifest()`. The `generate_thumbnails()` call is commented out, so thumbnails are not refreshed by a plain run.
 
 Data notes as of this writing:
 
-- The manifest lists `diplome_lea/diplome_lea_05.jpg`, but that file is not in
-  `assets/photos/`. The current gallery does not reference it.
-- `skyline`, `sunrise` and `waves` have PNG thumbnails while their originals are
-  JPG. Those photos are not used by the current gallery.
-- `Dunes/`, `diplome_lea/`, `diplome_valentin/` and `tapout/` have matching
-  thumbnails.
+- The manifest lists `diplome_lea/diplome_lea_05.jpg`, but that file is not in `assets/photos/`. The current gallery does not reference it.
+- `skyline`, `sunrise` and `waves` have PNG thumbnails while their originals are JPG. Those photos are not used by the current gallery.
+- `Dunes/`, `diplome_lea/`, `diplome_valentin/` and `tapout/` have matching thumbnails.
 
 ## Front-end integration
 
-- `assets/scripts/script.js` fetches `assets/photos/manifest.json` once at
-  startup. A failed request becomes an empty list.
-- `expandProjectImages()` matches `*` and `?` patterns against the manifest and
-  resolves unique bare basenames.
-- Peeks load `assets/thumbs/<image_path>` and retry once with
-  `assets/photos/<image_path>` on error, so a missing thumbnail degrades to the
-  full image instead of a blank peek.
+- `assets/scripts/script.js` fetches `assets/photos/manifest.json` once at startup. A failed request becomes an empty list.
+- `expandProjectImages()` matches `*` and `?` patterns against the manifest and resolves unique bare basenames.
+- The peeks and the instant preview load `assets/thumbs/<image_path>`. A peek retries once with `assets/photos/<image_path>` on error, so a missing thumbnail degrades to the full image instead of a blank peek.
 
 ## Adding a photo
 
 1. Put the file under the matching project folder in `assets/photos/`.
 2. Run `python3 assets/scripts/script.py` to refresh the manifest.
-3. Add the path or a glob to `galleries/main.json` if the project does not
-   already match it.
-4. Generate the thumbnail, either by enabling the commented call in the entry
-   point or by resizing the file into the mirrored folder under
-   `assets/thumbs/`.
+3. Add the path or a glob to `galleries/main.json` if the project does not already match it.
+4. Generate the thumbnail, either by enabling the commented call in the entry point or by resizing the file into the mirrored folder under `assets/thumbs/`.
 
-Without step 4 the neighbouring peek of that photo shows the full-size image.
+Without step 4 the peeks fall back to the full image, and the affected slide has no instant preview: it stays on the previous photo until the original arrives.
