@@ -665,6 +665,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.key === 'Escape') closeInfo();
                 return; // the info text is the only thing keyboard users act on
             }
+            // '+' opens the selected project's information, exactly as clicking
+            // its marker does. Modifier combinations stay with the browser
+            // (Ctrl/Cmd + '+' is zoom) and the wheel is invisible in fullscreen.
+            if (e.key === '+' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !document.fullscreenElement) {
+                const row = projectGallery.children[project_index];
+                const marker = row && row.querySelector('.project-info-btn');
+                if (marker) openInfo('project', marker, currentProjects[project_index]);
+                return;
+            }
             if (e.key === 'ArrowUp') {
                 if (project_index > 0) {
                     newIndex = project_index - 1;

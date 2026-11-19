@@ -251,10 +251,6 @@ body {
   transform: translateX(-50%) rotate(-90deg) /* Center vertically */
 }
 
-.bottom-text {
-	
-}
-
 /*
 .scroll-indicator {
     width: 10%;
@@ -268,7 +264,7 @@ body {
     max-width: var(--info-content-measure);
     max-height: 100%;
     margin: 0 auto;
-    padding: 40px 30px calc(56px + env(safe-area-inset-bottom));
+    padding: calc(64px + env(safe-area-inset-top)) 30px 40px;
     box-sizing: border-box;
     font-family: "SilkaMono", sans-serif;
     font-size: 1.15rem;
@@ -305,9 +301,9 @@ body {
 }
 
 #back {
-    bottom: calc(18px + env(safe-area-inset-bottom)); /* keep clear of the iOS home indicator */
+    top: calc(18px + env(safe-area-inset-top)); /* keep clear of the notch / status bar */
+    left: 28px;
     position: absolute;
-    right: 28px;
     font-size: 0.95rem;
     font-weight: bold;
     color: #222;
@@ -662,7 +658,7 @@ body {
     }
     .info-content {
         font-size: calc(1.15rem * var(--gallery-mobile-font-scale));
-        padding: 30px 24px calc(48px + env(safe-area-inset-bottom));
+        padding: calc(56px + env(safe-area-inset-top)) 24px 32px;
     }
     .gallery-nav-btn,
     #back {

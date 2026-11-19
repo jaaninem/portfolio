@@ -116,6 +116,7 @@ Each side of the featured photo has a strip of faint thumbnails for the neighbou
 | Gallery name click | Top bar | Load another gallery file |
 | Project title click | Gallery panel | Select that project |
 | `+` marker click | Gallery panel | Select that project and open its information |
+| `+` key | Page | Open the selected project's information |
 | Double-click, `f` | Photo panel | Toggle fullscreen |
 | `Escape` | Page | Leave fullscreen, or close the info view |
 
@@ -127,7 +128,8 @@ About and a project's information share one panel, so the two reading tasks beha
 - The panel adds `info-active` to the gallery and photo panels, hides the wheel, the nav, the counter, the photo description and the peek strips, and shows the Back button. The photo itself stays visible on desktop so the note keeps its context.
 - On desktop the gallery widens to `60vw` (`--gallery-container-info-width`) and the photo panel narrows to the remaining width; both stay visible.
 - On mobile the gallery expands to `100dvh` and the photo panel collapses to zero height.
-- Back and `Escape` close the view. Focus moves into the text on open and returns to the About button or the `+` marker on close. The wheel is re-measured on close because it was hidden.
+- Back sits at the top-left of the panel and, with `Escape`, closes the view. Focus moves into the text on open and returns to the About button or the `+` marker on close. The wheel is re-measured on close because it was hidden.
+- Pressing `+` opens the selected project's note. Modifier combinations (browser zoom) and fullscreen are left alone.
 - While the view is open, project and photo navigation inputs are ignored and the text scrolls natively (`overflow-y: auto`, `touch-action: pan-y`).
 
 ## Photo data and thumbnails
