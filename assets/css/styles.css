@@ -25,6 +25,7 @@
     --peek-gap: 10px; /* Space between the featured photo and its peeks */
     --peek-spacing: 8px; /* Space between two thumbnails in the same strip */
     --peek-opacity: 0.28; /* Resting opacity of the nearest peek */
+    --photo-index-band: calc(15px + 1.2rem + env(safe-area-inset-bottom)); /* counter's bottom offset plus its 1.2 line box: the photo is centred above this line */
 	/*--font-family: "SilkaMono", sans-serif;*/
 }
 
@@ -409,12 +410,14 @@ body {
     touch-action: none; /* Let horizontal swipes on the image change photos */
 }
 
-/* Fill the panel's content box with the featured photo, framed by a small equal top/bottom padding */
+/* Fill the panel's content box with the featured photo, framed by a small equal top/bottom padding.
+   The frame is centred in the area above the counter (the photo index), so the white band above
+   the photo and the space between the photo and the counter read as the same. */
 #image-container {
     position: absolute;
-    top: 7%;   /* matches #main-display padding, so it fills the content area */
+    top: calc(7% - var(--photo-index-band) / 2); /* matches #main-display padding, shifted up by half the counter band */
     right: 5%;
-    bottom: 7%;
+    bottom: calc(7% + var(--photo-index-band) / 2);
     left: 5%;
     display: flex;
     justify-content: center;
@@ -468,7 +471,7 @@ body {
    the strips and places them. */
 .peek-strip {
     position: absolute;
-    top: 50%;
+    top: calc(50% - var(--photo-index-band) / 2); /* share the photo's vertical centre */
     left: 0; /* overwritten by script.js */
     z-index: 2;
     display: flex;
@@ -556,6 +559,7 @@ body {
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: 0px;
+    line-height: 1.2; /* keeps the reserved --photo-index-band exact */
 }
 
 .project-year {
@@ -603,6 +607,8 @@ body {
 #main-display.info-active {
     width: calc(100vw - var(--gallery-container-info-width));
     transition: var(--gallery-container-info-transition);
+    /* The counter is hidden while reading, so the photo centres in the panel again. */
+    --photo-index-band: 0px;
 }
 
 /*
@@ -626,6 +632,7 @@ body {
         --peek-width: clamp(20px, 6.5vw, 28px); /* narrower photo gutter on phones */
         --peek-gap: 6px;
         --peek-spacing: 6px;
+        --photo-index-band: calc(15px + 1.2rem * var(--gallery-mobile-font-scale) + env(safe-area-inset-bottom)); /* the counter is scaled on phones */
     }
 
     .container {
@@ -708,9 +715,9 @@ body {
     }
 
     #image-container {
-        top: 20%; /* match #main-display's mobile padding so it fills the content area */
+        top: calc(20% - var(--photo-index-band) / 2); /* match #main-display's mobile padding, shifted up by half the counter band */
         right: 8%;
-        bottom: 20%;
+        bottom: calc(20% + var(--photo-index-band) / 2);
         left: 8%;
     }
     /*

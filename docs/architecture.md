@@ -44,8 +44,9 @@ Listeners that belong to a project or to a single image are attached through an 
 
 - `#gallery-container` is `25vw` wide (`--gallery-container-width`), has a soft right shadow and `resize: horizontal`, so the divider can be dragged.
 - `#main-display` takes the remaining width, has a white background, `7% 5%` padding and hides overflow.
-- `#image-container` is absolutely inset to match that padding and centres its content. `#featured-image` scales with `max-width` and `max-height` at 100%, keeping its own aspect ratio.
-- The counter sits at the bottom-right of the panel; the photo description sits under the image container.
+- `#image-container` is absolutely inset to match that padding and centres its content. It is raised by half the counter band (`--photo-index-band`) so the photo is centred between the panel top and the top of the counter, which is the lower edge of the photo index. `#featured-image` scales with `max-width` and `max-height` at 100%, keeping its own aspect ratio.
+- The counter sits at the bottom-right of the panel; the photo description sits under the image container. The neighbour peek strips share the photo's vertical centre.
+- The info view hides the counter, so `#main-display.info-active` sets `--photo-index-band` to `0px` and the photo centres in the whole panel.
 
 ### Mobile (max-width: 768px)
 

@@ -97,6 +97,7 @@ Defined in `:root` in `assets/css/styles.css`; the mobile overrides sit in the `
 | `--peek-gap` | `10px` | Space between the photo and the nearest peek; mobile: `6px` |
 | `--peek-spacing` | `8px` | Space between two thumbnails in the same strip; mobile: `6px` |
 | `--peek-opacity` | `0.28` | Resting opacity of the nearest peek; each further step fades more |
+| `--photo-index-band` | `calc(15px + 1.2rem + env(safe-area-inset-bottom))` | Space the counter occupies at the bottom of the photo panel; the photo is centred above it. Mobile derives it from the scaled counter (`1.2rem * var(--gallery-mobile-font-scale)`) |
 
 Changing `--project-title-font-size-base` or `--gallery-mobile-font-scale` also changes the scroll step, because `--project-title-height` derives from the title size. The JavaScript re-reads the rendered title height on resize.
 

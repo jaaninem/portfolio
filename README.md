@@ -43,11 +43,12 @@ docs/             project documentation
 
 ## Tests
 
-Browser checks in `tests/` cover the project list (one project per wheel gesture or swipe), the info view's focus handling and its split on phones. They are driven by headless Chromium/Chrome through a stdlib-only DevTools harness (`tests/cdp.py`).
+Browser checks in `tests/` cover the project list (one project per wheel gesture or swipe), the info view's focus handling and its split on phones, and the photo's vertical centring against the counter. They are driven by headless Chromium/Chrome through a stdlib-only DevTools harness (`tests/cdp.py`).
 
 ```bash
 python3 tests/test_project_scroll.py
 python3 tests/test_info_view.py
+python3 tests/test_photo_centering.py
 ```
 
 The scripts serve the repository themselves and need no Python packages, only Chromium or Chrome. `pytest tests/` runs the same checks.

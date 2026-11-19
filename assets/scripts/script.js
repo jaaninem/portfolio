@@ -369,8 +369,8 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
         // Each strip sits as a unit just outside the photo, clamped inside the
-        // panel's white gutter. The photo is centred vertically, so only the
-        // horizontal position has to be computed.
+        // panel's white gutter. The strips share the photo's vertical centre
+        // (see .peek-strip), so only the horizontal position has to be computed.
         function positionPeekStrips(geometry, metrics) {
             if (prevStrip.children.length) {
                 const width = prevStrip.getBoundingClientRect().width;
