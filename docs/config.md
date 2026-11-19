@@ -28,7 +28,7 @@ Each gallery file is an array of projects. `galleries/main.json` follows this sh
         "project-title": "AXE-X",
         "year": "2026",
         "location": null,
-        "end-text": "Editorial project for Valentin Meghit's diploma",
+        "info": "Editorial project for Valentin Meghit's diploma",
         "images": [
             { "image_path": "diplome_val_*.jpg" }
         ]
@@ -41,7 +41,7 @@ Each gallery file is an array of projects. `galleries/main.json` follows this sh
 | `project-title` | string | yes | Title in the project list |
 | `year` | string or `null` | no | Small label next to the title |
 | `location` | string or `null` | no | Small label next to the title |
-| `end-text` | string | no | Closing slide shown after the last image; also reachable through the `Fin` peek |
+| `info` | string | no | Note shown when the project's `+` marker opens its information view |
 | `images` | array | yes | Slides of the project |
 | `images[].image_path` | string | yes | Path under `assets/photos/`, or a glob |
 | `images[].description` | string | no | Caption under the photo; no project uses it currently |
@@ -87,13 +87,13 @@ Defined in `:root` in `assets/css/styles.css`; the mobile overrides sit in the `
 | `--gallery-mobile-font-scale` | `0.7` | Scale applied to gallery text on mobile |
 | `--gallery-container-width` | `25vw` | Width of the left panel |
 | `--gallery-container-mobile-height` | `25dvh` | Height of the gallery panel on mobile |
-| `--gallery-container-about-width` | `60vw` | Gallery width target in About mode |
-| `--gallery-container-about-mobile-height` | `100dvh` | Gallery height in About mode on mobile |
-| `--gallery-container-about-transition` | `width 0.5s ease-in-out` | Desktop About transition |
-| `--gallery-container-about-transition-mobile` | `height 0.5s ease-in-out` | Mobile About transition |
+| `--gallery-container-info-width` | `60vw` | Gallery width target while the info view is open |
+| `--gallery-container-info-mobile-height` | `100dvh` | Gallery height in the info view on mobile |
+| `--gallery-container-info-transition` | `width 0.5s ease-in-out` | Desktop info-view transition |
+| `--gallery-container-info-transition-mobile` | `height 0.5s ease-in-out` | Mobile info-view transition |
 | `--gallery-elements-animation` | `fadeIn 0.5s ease` | Fade used when gallery elements appear |
+| `--info-content-measure` | `44ch` | Line length of the About and project info text |
 | `--peek-width` | `clamp(26px, 3.2vw, 46px)` | Neighbour peek width; mobile: `clamp(20px, 6.5vw, 28px)` |
-| `--peek-text-width` | `calc(var(--peek-width) * 0.78)` | Width of the `Fin` card |
 | `--peek-gap` | `10px` | Space between the photo and the nearest peek; mobile: `6px` |
 | `--peek-spacing` | `8px` | Space between two thumbnails in the same strip; mobile: `6px` |
 | `--peek-opacity` | `0.28` | Resting opacity of the nearest peek; each further step fades more |

@@ -1,6 +1,6 @@
 # Janine Agbayani - Portfolio
 
-Portfolio site for photographer Janine Agbayani. A scrollable list of projects sits on the left, the selected project's photos are shown in the right panel. Static HTML, CSS and JavaScript, with no build step.
+Portfolio site for photographer Janine Agbayani. A scrollable list of projects sits on the left, the selected project's photos are shown in the right panel. A `+` next to a project title opens that project's information in the same panel as the About text. Static HTML, CSS and JavaScript, with no build step.
 
 ## Quickstart
 
@@ -15,7 +15,7 @@ Then open http://localhost:8000/.
 ## Content
 
 - `galleries/galleries.js`: the list of galleries shown in the top bar.
-- `galleries/main.json`: projects, captions and image paths.
+- `galleries/main.json`: projects, notes and image paths.
 - `assets/photos/`: full-size photos, one folder per project.
 - `assets/thumbs/`: 300 px copies used by the neighbour peeks and the instant preview.
 - `assets/scripts/script.py`: refreshes `assets/photos/manifest.json` and can generate thumbnails.

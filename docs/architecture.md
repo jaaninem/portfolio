@@ -4,7 +4,7 @@
 
 The site is a single page with two panels inside `.container`:
 
-- `#gallery-container`, a narrow left panel listing project titles and the gallery names, with an About button.
+- `#gallery-container`, a narrow left panel listing project titles and the gallery names, with an About button. Each title carries a `+` marker that opens that project's information in the same panel.
 - `#main-display`, a white photo panel showing one slide at a time.
 
 All behaviour is in `assets/scripts/script.js`. There is no framework, bundler or server-side code. Gallery data and the photo manifest are fetched at runtime.
@@ -13,9 +13,9 @@ All behaviour is in `assets/scripts/script.js`. There is no framework, bundler o
 
 | Path | Role |
 | --- | --- |
-| `index.html` | Page markup, About copy, peek strips, script includes |
+| `index.html` | Page markup, About copy, project info block, peek strips, script includes |
 | `assets/css/styles.css` | Layout, typography, transitions, responsive rules |
-| `assets/scripts/script.js` | Data loading, rendering, navigation, peeks, About mode |
+| `assets/scripts/script.js` | Data loading, rendering, navigation, peeks, info view |
 | `galleries/galleries.js` | `GALLERIES` list shown in the top bar |
 | `galleries/main.json` | Projects, captions and image paths |
 | `assets/photos/` | Full-size photos, one folder per project |
@@ -29,7 +29,7 @@ All behaviour is in `assets/scripts/script.js`. There is no framework, bundler o
 1. `index.html` loads `galleries/galleries.js`, which defines `GALLERIES`, then `assets/scripts/script.js`.
 2. On `DOMContentLoaded`, the script fetches the first gallery file and `assets/photos/manifest.json` in parallel. A failed manifest request is treated as an empty list.
 3. `expandProjectImages()` expands `*` and `?` patterns against the manifest. A literal path is kept as-is; a bare basename is resolved when exactly one manifest entry matches it.
-4. `initGallery()` renders one project row per project, builds the gallery name buttons, measures the rendered title height (`readProjectHeight`) and stores it as the scroll step.
+4. `initGallery()` renders one project row per project (title, `+` info marker, year and location), builds the gallery name buttons, measures the rendered title height (`readProjectHeight`) and stores it as the scroll step.
 5. Selecting a project translates `#project-gallery` by `project_index * projectHeight` over `0.35s` and calls `updateProject()`.
 6. `updateProject()` restores that project's remembered image index, marks the active title and calls `updateImage()`.
 7. `updateImage()` paints the slide: the prefetched original when it is ready, otherwise the thumbnail preview. It then refreshes the counter, the neighbour peeks and the per-image listeners, and schedules the neighbour prefetch.
@@ -62,13 +62,14 @@ The sidebar width and the mobile panel height are CSS variables, documented in [
 - `readProjectHeight()` reads the used height of a rendered `.project-title` instead of the raw `var()`/`calc()` value, because custom properties do not resolve to pixels in `getComputedStyle`.
 - The wheel moves the list in steps of `projectHeight * 0.15` and snaps to the nearest project. The position is clamped with half a row of extra space at each end.
 - Keyboard `ArrowUp` and `ArrowDown` change project.
+- Each row has a `+` marker at the right of its title. It is always visible on the selected row and on row hover (desktop), and opens that project's info view. On touch only the selected row accepts taps on it, with a 44 px target.
 - On touch, a vertical swipe anywhere on the gallery panel changes exactly one project (30 px minimum, dominant vertical movement). A 10 px movement threshold separates a tap on a title from a swipe.
 - The gallery-name row (`#gallery-buttons`) scrolls horizontally on its own; its touch events are excluded from the project swipe handler.
 
 ## Photo viewer
 
 - Each project remembers its own image index in `imageIndices`.
-- The slide count is the number of images plus one when the project defines `end-text`. The counter reads `current / total` and follows the visible slide: the prefetched original when it is ready, otherwise the thumbnail preview. The selected index is stored immediately, so switching projects during a load keeps the choice.
+- The slide count is the number of images. The counter reads `current / total` and follows the visible slide: the prefetched original when it is ready, otherwise the thumbnail preview. The selected index is stored immediately, so switching projects during a load keeps the choice.
 - The featured photo uses the original file under `assets/photos/`.
 - When the target original is not ready, the 300 px thumbnail under `assets/thumbs/` is painted immediately at the exact box size of the original. The original loads off-screen and silently replaces the source when it decodes. The preview is sized with the image's computed `max-width` and `max-height`, so portrait and landscape frames keep the same box before and after the upgrade.
 - After a slide has been visible for 300 ms, the previous and next originals are prefetched with low priority. Up to six loaded originals are kept in memory as an in-document cache. A prefetched original is painted directly, with no preview frame. Rapid navigation clears the prefetch timer and cancels the pending original, so skipped slides are not downloaded.
@@ -90,7 +91,7 @@ Each side of the featured photo has a strip of faint thumbnails for the neighbou
   - at least one per side, as before, even when the gap has to compress.
 - `peekItems()` walks outwards from the current slide and returns up to that many slides per side:
   - left: the images before the current one;
-  - right: the images after it, ending with a small `Fin` card when the project's end-text slide is within reach;
+  - right: the images after it, stopping at the last photo;
   - a side with no neighbour gets an empty strip, which is hidden and has no tab stops.
 - The strips are reused between slides: `renderPeekStrip()` swaps the content of the existing buttons instead of rebuilding them, so a slide change does not flash.
 - The previous strip lays out in `row-reverse`, so its first child (the nearest slide) sits against the photo's left edge. The whole strip is centred vertically.
@@ -114,15 +115,20 @@ Each side of the featured photo has a strip of faint thumbnails for the neighbou
 | Peek click | Photo panel edges | Jump to the clicked slide |
 | Gallery name click | Top bar | Load another gallery file |
 | Project title click | Gallery panel | Select that project |
+| `+` marker click | Gallery panel | Select that project and open its information |
 | Double-click, `f` | Photo panel | Toggle fullscreen |
-| `Escape` | Page | Leave fullscreen |
+| `Escape` | Page | Leave fullscreen, or close the info view |
 
-## About mode
+## Info view
 
-- The About button adds `about-active` to the gallery panel and the photo panel, hides the normal-mode elements and shows `#about-text` and the Back button.
-- On desktop the gallery widens (target `60vw`) and the photo panel narrows; both panels stay visible.
+About and a project's information share one panel, so the two reading tasks behave the same.
+
+- `openInfo('about')` shows `#about-text`; `openInfo('project', trigger, project)` fills `#project-info` with the title, a `year · location` line and the `info` note. Each text block is a `.info-content` column of at most `44ch`.
+- The panel adds `info-active` to the gallery and photo panels, hides the wheel, the nav, the counter, the photo description and the peek strips, and shows the Back button. The photo itself stays visible on desktop so the note keeps its context.
+- On desktop the gallery widens to `60vw` (`--gallery-container-info-width`) and the photo panel narrows to the remaining width; both stay visible.
 - On mobile the gallery expands to `100dvh` and the photo panel collapses to zero height.
-- Back reverses the classes and the visibility changes. Width and height transitions are defined by CSS variables.
+- Back and `Escape` close the view. Focus moves into the text on open and returns to the About button or the `+` marker on close. The wheel is re-measured on close because it was hidden.
+- While the view is open, project and photo navigation inputs are ignored and the text scrolls natively (`overflow-y: auto`, `touch-action: pan-y`).
 
 ## Photo data and thumbnails
 
@@ -135,7 +141,7 @@ Each side of the featured photo has a strip of faint thumbnails for the neighbou
 
 - Classic scripts only: no modules, no bundler, no transpiler.
 - The page must be served over HTTP because the gallery JSON and manifest are fetched.
-- The gallery JSON is the single source for project titles, captions, years, locations and end text.
+- The gallery JSON is the single source for project titles, captions, years, locations and project information.
 - Thumbnails and the manifest are data, not build output: adding a photo without running the script leaves the peek fallback in charge.
 - Prefetching is best effort and adds roughly two originals per settled slide. It is delayed, low priority and skipped while navigating quickly.
 - The photo viewer keeps state in memory only; reloading returns to the first project and the first image of each project.

@@ -20,7 +20,7 @@ The page fetches `galleries/*.json` and `assets/photos/manifest.json`, so it has
 
 | Page | Covers |
 | --- | --- |
-| [architecture.md](architecture.md) | Layout, runtime flow, navigation inputs, peeks, About mode |
+| [architecture.md](architecture.md) | Layout, runtime flow, navigation inputs, peeks, info view |
 | [config.md](config.md) | Gallery list, gallery JSON, CSS variables, tuning constants |
 | [modules/photo-pipeline.md](modules/photo-pipeline.md) | `assets/scripts/script.py`, thumbnails and the manifest |
 
