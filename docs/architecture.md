@@ -60,7 +60,9 @@ The sidebar width and the mobile panel height are CSS variables, documented in [
 
 - The project list is translated with `transform: translateY(...)`; it never uses native scrolling, so the selected title can be snapped to the cursor line.
 - `readProjectHeight()` reads the used height of a rendered `.project-title` instead of the raw `var()`/`calc()` value, because custom properties do not resolve to pixels in `getComputedStyle`.
-- The wheel moves the list in steps of `projectHeight * 0.15` and snaps to the nearest project. The position is clamped with half a row of extra space at each end.
+- The list only rests on a project row: navigation always animates from one project to the next, with no fractional position in between.
+- The wheel and a touch swipe follow the same rule: one gesture changes exactly one project. Wheel deltas are accumulated to the same 30 px threshold as a swipe, and a gesture ends after 150 ms of quiet, so a trackpad flick and its momentum count as a single step. Horizontal-dominant gestures are left alone, so the gallery-name row keeps its native horizontal scroll. Movement is clamped at both ends, with no overscroll past the first or last project.
+- All project navigation goes through `goToProject(index)`, which clamps and runs the 0.35 s slide: wheel, touch swipe, `ArrowUp`/`ArrowDown`, title clicks and the `+` marker.
 - Keyboard `ArrowUp` and `ArrowDown` change project.
 - Each row has a `+` marker at the right of its title. It is always visible on the selected row and on row hover (desktop), and opens that project's info view. On touch only the selected row accepts taps on it, with a 44 px target.
 - On touch, a vertical swipe anywhere on the gallery panel changes exactly one project (30 px minimum, dominant vertical movement). A 10 px movement threshold separates a tap on a title from a swipe.
@@ -106,7 +108,7 @@ Each side of the featured photo has a strip of faint thumbnails for the neighbou
 
 | Input | Where | Effect |
 | --- | --- | --- |
-| Wheel | Gallery panel | Previous or next project |
+| Wheel | Gallery panel | One project per gesture |
 | Wheel | Photo panel | Previous or next slide |
 | Vertical swipe | Gallery panel | One project per gesture |
 | Horizontal swipe | Photo panel | Previous or next slide |

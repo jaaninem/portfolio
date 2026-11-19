@@ -41,6 +41,16 @@ docs/             project documentation
 - [Configuration](docs/config.md)
 - [Photo pipeline](docs/modules/photo-pipeline.md)
 
+## Tests
+
+`tests/test_project_scroll.py` drives the project list in headless Chromium/Chrome: wheel and touch each change exactly one project, both ends clamp, and the photo wheel, info view, keyboard arrows and resize realignment keep working.
+
+```bash
+python3 tests/test_project_scroll.py
+```
+
+The test serves the repository itself and uses only the Python standard library. Chromium or Chrome has to be installed. `pytest tests/test_project_scroll.py` runs the same checks.
+
 ## Status
 
 Client-side only, no dependencies to install. Checked in Chromium at desktop and phone viewports. The repository does not include a license file.

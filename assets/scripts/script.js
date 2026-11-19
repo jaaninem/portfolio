@@ -156,14 +156,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 //projectTitle.addEventListener('touchend', projectTitleFunction);
 
                 function projectTitleFunction(){
-                    projectTransition(index);
+                    goToProject(index);
                 }
 
                 // The info marker selects the project, then opens its note, so
                 // the photo behind the panel belongs to the text on screen.
                 infoBtn.addEventListener('click', (event) => {
                     event.stopPropagation();
-                    projectTransition(index);
+                    goToProject(index);
                     openInfo('project', infoBtn, project);
                 });
 
@@ -178,7 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Set up scrolling
-        let currentPosition = 0;
         let project_index = 0;
         //let scrollTimeout = null;
         let totalProjects = 0;
@@ -193,21 +192,17 @@ document.addEventListener('DOMContentLoaded', () => {
         function onViewportResize() {
             if (infoMode) return; // wheel hidden: re-measured in closeInfo()
             projectHeight = readProjectHeight();
-            currentPosition = project_index * projectHeight;
             projectGallery.style.transition = 'none';
-            projectGallery.style.transform = `translateY(${-currentPosition}px)`;
+            projectGallery.style.transform = `translateY(${-project_index * projectHeight}px)`;
         }
         window.addEventListener('resize', onViewportResize);
         window.addEventListener('orientationchange', onViewportResize);
 
+        // Snap the list to a project. The list only ever rests on a project row:
+        // there is no fractional position between two projects.
         function projectTransition(newIndex){
-            currentPosition = newIndex * projectHeight;
-            projectTransitionAnimation(currentPosition, newIndex);
-        }
-
-        function projectTransitionAnimation(position, newIndex){
             projectGallery.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
-            projectGallery.style.transform = `translateY(${-position}px)`;
+            projectGallery.style.transform = `translateY(${-newIndex * projectHeight}px)`;
             if (newIndex !== project_index) {
                 project_index = newIndex;
                 //navigator.vibrate(50); // Optional: Add a vibration effect on project change
@@ -563,10 +558,32 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize the first project
         updateProject();
 
-        const scrollSpeed = 0.15; // Adjust this for scroll sensitivity (desktop wheel)
+        // Project scrolling: one wheel gesture changes exactly one project, just
+        // as one vertical swipe does on touch. A gesture ends after a short quiet
+        // period, so a trackpad flick and its momentum count as a single scroll
+        // instead of a stream of steps.
+        const WHEEL_STEP = 30;          // px accumulated before a step (same as the swipe threshold)
+        const WHEEL_GESTURE_IDLE = 150; // ms of quiet that ends a wheel gesture
+        const WHEEL_LINE_HEIGHT = 16;   // px per line for browsers reporting deltaMode 1
+        let wheelTravel = 0;            // accumulated vertical distance in this gesture
+        let wheelLocked = false;        // a step was taken: wait for the gesture to end
+        let wheelIdleTimer = 0;
 
-        // Gallery swipe: any vertical swipe switches to the next / previous project,
-        // regardless of the distance (predictable: one project per swipe).
+        // Some browsers report wheel deltas in lines or pages instead of pixels.
+        function wheelPixels(event) {
+            const scale = event.deltaMode === 1
+                ? WHEEL_LINE_HEIGHT
+                : event.deltaMode === 2 ? window.innerHeight : 1;
+            return { x: event.deltaX * scale, y: event.deltaY * scale };
+        }
+
+        function endWheelGesture() {
+            wheelLocked = false;
+            wheelTravel = 0;
+        }
+
+        // Gallery swipe and wheel share one rule: a deliberately vertical gesture
+        // switches to the adjacent project, and at most one project per gesture.
         let swipeStartX = 0;
         let swipeStartY = 0;
         let swipeMoved = false;
@@ -574,9 +591,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // Wheel event (desktop)
         galleryContainer.addEventListener('wheel', (e) => {
             if (infoMode) return; // let the info text scroll natively
+            const delta = wheelPixels(e);
+            // Horizontal gestures keep their native scrolling (gallery names row)
+            if (Math.abs(delta.x) > Math.abs(delta.y)) return;
             e.preventDefault();
-            handleScroll(e.deltaY);
-        });
+
+            // Every event extends the gesture, including the decaying momentum
+            // that follows a trackpad flick.
+            clearTimeout(wheelIdleTimer);
+            wheelIdleTimer = setTimeout(endWheelGesture, WHEEL_GESTURE_IDLE);
+            if (wheelLocked) return; // this gesture already moved the list
+
+            wheelTravel += delta.y;
+            if (Math.abs(wheelTravel) < WHEEL_STEP) return;
+            const direction = wheelTravel > 0 ? 1 : -1;
+            wheelTravel = 0;
+            wheelLocked = true;
+            goToProject(project_index + direction);
+        }, { passive: false });
 
         // Touch events (mobile) - a swipe always switches exactly one project
         galleryContainer.addEventListener('touchstart', (e) => {
@@ -613,9 +645,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Only vertical, dominant swipes switch projects
             if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > threshold) {
                 if (dy < 0) {
-                    swipeToProject(project_index + 1); // finger up -> next
+                    goToProject(project_index + 1); // finger up -> next
                 } else {
-                    swipeToProject(project_index - 1); // finger down -> previous
+                    goToProject(project_index - 1); // finger down -> previous
                 }
             }
         });
@@ -624,41 +656,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // nothing to do; the touch was cancelled
         });
 
-        // Switch to an adjacent project (clamped to the list bounds)
-        function swipeToProject(index) {
+        // Switch to a project by index, clamped to the list bounds. The wheel,
+        // touch swipe, arrow keys and title clicks all land here, so desktop and
+        // mobile always step project by project.
+        function goToProject(index) {
             const nextIndex = Math.min(Math.max(index, 0), totalProjects - 1);
             if (nextIndex !== project_index) {
                 projectTransition(nextIndex);
             }
         }
 
-        // Unified scroll handler (desktop wheel: stepped movement, snaps via projectTransitionAnimation)
-        function handleScroll(deltaY) {
-
-            const additionalSpace = projectHeight / 2; // Additional space to scroll past the last project
-
-            const maxPosition = (totalProjects - 1) * projectHeight + additionalSpace;
-            const minPosition = -additionalSpace;
-            const direction = deltaY > 0 ? 1 : -1;
-            
-            // Update position with boundaries
-            currentPosition = Math.min(
-                maxPosition,
-                Math.max(minPosition, currentPosition + direction * projectHeight * scrollSpeed)
-            );
-            
-            // Calculate nearest project index
-            const minIndex = 0;
-            const maxIndex = totalProjects - 1;
-            const newIndex = Math.min(
-                Math.max(Math.round(currentPosition / projectHeight), minIndex), 
-                maxIndex
-            );
-            
-            // Apply transform
-            projectTransitionAnimation(currentPosition, newIndex);
-        }
-        
         // Keyboard navigation
         document.addEventListener('keydown', (e) => {
             if (infoMode) {
@@ -675,15 +682,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             if (e.key === 'ArrowUp') {
-                if (project_index > 0) {
-                    newIndex = project_index - 1;
-                    projectTransition(newIndex);
-                }
+                goToProject(project_index - 1);
             } else if (e.key === 'ArrowDown') {
-                if (project_index < totalProjects - 1) {
-                    newIndex = project_index + 1;
-                    projectTransition(newIndex);
-                }
+                goToProject(project_index + 1);
             }
         });
 
@@ -700,7 +701,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     currentProjects = data.map(project => ({ ...project, images: expandProjectImages(project, availableFiles) }));
                     renderProjects();
-                    currentPosition = 0;
                     project_index = 0;
                     projectGallery.style.transition = 'none';
                     projectGallery.style.transform = 'translateY(0px)';

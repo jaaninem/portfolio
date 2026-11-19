@@ -106,7 +106,9 @@ These are constants in `assets/scripts/script.js`, not user-facing settings:
 
 | Constant | Value | Effect |
 | --- | --- | --- |
-| `scrollSpeed` | `0.15` | Wheel sensitivity for the project list |
+| `WHEEL_STEP` | `30` px | Accumulated wheel distance before the project list steps (same as the swipe threshold) |
+| `WHEEL_GESTURE_IDLE` | `150` ms | Quiet time that ends a wheel gesture; longer trackpad momentum stays one step |
+| `WHEEL_LINE_HEIGHT` | `16` px | Pixels per line when a browser reports wheel deltas in lines |
 | Project transition | `transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)` | Title list slide |
 | Image wheel threshold | `100` px | Accumulated wheel distance before a slide change |
 | Image swipe threshold | `50` px | Horizontal swipe distance on the photo |
