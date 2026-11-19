@@ -1,6 +1,6 @@
 """Focus behaviour of the project information view.
 
-The `+` shortcut has to open the selected project's note without moving focus to
+The `i` shortcut has to open the selected project's note without moving focus to
 that project's marker, so pressing `Escape` does not leave a focus ring there.
 Clicking the marker keeps the usual "return focus to the trigger" behaviour.
 
@@ -68,10 +68,10 @@ def test_info_view_focus() -> None:
             f"nothing should be focused after load: {start}"
         )
 
-        session.key("+", "Equal", 187)
+        session.key("i", "KeyI", 73)
         session.wait(400)
         opened = state(session)
-        assert opened["info"] is True, f"the + shortcut should open the note: {opened}"
+        assert opened["info"] is True, f"the i shortcut should open the note: {opened}"
         assert opened["activeId"] == "project-info", (
             f"focus should move into the note: {opened}"
         )
@@ -92,9 +92,9 @@ def test_info_view_focus() -> None:
 
         # The shortcut restores whatever was focused before it was pressed.
         session.js("document.getElementById('about').focus()")
-        session.key("+", "Equal", 187)
+        session.key("i", "KeyI", 73)
         session.wait(400)
-        assert state(session)["info"] is True, "the + shortcut should open the note"
+        assert state(session)["info"] is True, "the i shortcut should open the note"
 
         session.key("Escape", "Escape", 27)
         session.wait(700)

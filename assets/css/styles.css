@@ -171,12 +171,15 @@ body {
     overflow-wrap: break-word; /* Break long words if needed */
 }
 
-/* Info marker: opens the project's information view. It stays out of the way
-   until the row is selected or hovered, so the wheel remains typographic. */
+/* Info marker: a circled "i" that opens the project's information view. It is
+   centred on the selection line, so the line runs behind its disc. It stays out
+   of the way until the row is selected or hovered, so the wheel remains
+   typographic. */
 .project-info-btn {
     position: absolute;
     left: calc(100% + 12px);
-    top: 4px; /* superscript: clear of the selection line */
+    top: 50%;
+    transform: translateY(-50%); /* centre the badge on the title text */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -187,12 +190,27 @@ body {
     background: none;
     color: #555;
     font-family: inherit;
-    font-size: 1.25rem;
+    font-size: 1.15rem; /* sets the badge scale: the ring is 1.3em wide */
+    font-weight: normal; /* the active row is bold; keep the glyph as thin as the ring */
     line-height: 1;
     cursor: pointer;
     opacity: 0;
     transition: opacity 0.15s ease-out, color 0.15s ease-out;
     -webkit-tap-highlight-color: transparent;
+}
+
+/* The disc hides the selection line running behind the row */
+.project-info-btn::before {
+    content: "i";
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.3em;
+    height: 1.3em;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    background: #f8f8f8;
+    line-height: 1;
 }
 
 .project-title.active .project-info-btn,
@@ -214,8 +232,7 @@ body {
 @media (hover: none) {
     .project-info-btn {
         pointer-events: none;
-        top: -4px; /* centre the glyph above the selection line */
-        width: 44px;
+        width: 44px; /* full-size tap target; the disc keeps its 1.3em size */
         height: 44px;
     }
     .project-title.active .project-info-btn {
@@ -672,6 +689,10 @@ body {
     }
     .counter {
         font-size: calc(1rem * var(--gallery-mobile-font-scale));
+    }
+    /* Smaller badge for the shorter, smaller title rows */
+    .project-info-btn {
+        font-size: 1rem;
     }
 
     /* Center the titles on mobile and keep them clear of the year/location labels */

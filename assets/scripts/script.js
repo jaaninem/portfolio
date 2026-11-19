@@ -122,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const infoBtn = document.createElement('button');
                 infoBtn.type = 'button';
                 infoBtn.className = 'project-info-btn';
-                infoBtn.textContent = '+';
                 infoBtn.setAttribute('aria-label', `Show information about ${project['project-title']}`);
 
                 projectTitle.append(titleText, infoBtn);
@@ -672,10 +671,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.key === 'Escape') closeInfo();
                 return; // the info text is the only thing keyboard users act on
             }
-            // '+' opens the selected project's information, exactly as clicking
-            // its marker does. Modifier combinations stay with the browser
-            // (Ctrl/Cmd + '+' is zoom) and the wheel is invisible in fullscreen.
-            if (e.key === '+' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !document.fullscreenElement) {
+            // 'i' opens the selected project's information, exactly as clicking
+            // its marker does. Modifier combinations stay with the browser and
+            // the wheel is invisible in fullscreen.
+            const infoKey = e.key === 'i' || e.key === 'I'; // Shift+I counts too
+            if (infoKey && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !document.fullscreenElement) {
                 // The shortcut acts on the selected project without focusing its
                 // marker: on close, focus returns to whatever was focused before.
                 const origin = document.activeElement;

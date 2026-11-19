@@ -1,6 +1,6 @@
 # Janine Agbayani - Portfolio
 
-Portfolio site for photographer Janine Agbayani. A scrollable list of projects sits on the left, the selected project's photos are shown in the right panel. A `+` next to a project title opens that project's information in the same panel as the About text. Static HTML, CSS and JavaScript, with no build step.
+Portfolio site for photographer Janine Agbayani. A scrollable list of projects sits on the left, the selected project's photos are shown in the right panel. A circled `i` next to a project title opens that project's information in the same panel as the About text. Static HTML, CSS and JavaScript, with no build step.
 
 ## Quickstart
 

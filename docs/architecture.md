@@ -4,7 +4,7 @@
 
 The site is a single page with two panels inside `.container`:
 
-- `#gallery-container`, a narrow left panel listing project titles and the gallery names, with an About button. Each title carries a `+` marker that opens that project's information in the same panel.
+- `#gallery-container`, a narrow left panel listing project titles and the gallery names, with an About button. Each title carries a circled `i` marker that opens that project's information in the same panel.
 - `#main-display`, a white photo panel showing one slide at a time.
 
 All behaviour is in `assets/scripts/script.js`. There is no framework, bundler or server-side code. Gallery data and the photo manifest are fetched at runtime.
@@ -29,7 +29,7 @@ All behaviour is in `assets/scripts/script.js`. There is no framework, bundler o
 1. `index.html` loads `galleries/galleries.js`, which defines `GALLERIES`, then `assets/scripts/script.js`.
 2. On `DOMContentLoaded`, the script fetches the first gallery file and `assets/photos/manifest.json` in parallel. A failed manifest request is treated as an empty list.
 3. `expandProjectImages()` expands `*` and `?` patterns against the manifest. A literal path is kept as-is; a bare basename is resolved when exactly one manifest entry matches it.
-4. `initGallery()` renders one project row per project (title, `+` info marker, year and location), builds the gallery name buttons, measures the rendered title height (`readProjectHeight`) and stores it as the scroll step.
+4. `initGallery()` renders one project row per project (title, circled `i` info marker, year and location), builds the gallery name buttons, measures the rendered title height (`readProjectHeight`) and stores it as the scroll step.
 5. Selecting a project translates `#project-gallery` by `project_index * projectHeight` over `0.35s` and calls `updateProject()`.
 6. `updateProject()` restores that project's remembered image index, marks the active title and calls `updateImage()`.
 7. `updateImage()` paints the slide: the prefetched original when it is ready, otherwise the thumbnail preview. It then refreshes the counter, the neighbour peeks and the per-image listeners, and schedules the neighbour prefetch.
@@ -62,9 +62,9 @@ The sidebar width and the mobile panel height are CSS variables, documented in [
 - `readProjectHeight()` reads the used height of a rendered `.project-title` instead of the raw `var()`/`calc()` value, because custom properties do not resolve to pixels in `getComputedStyle`.
 - The list only rests on a project row: navigation always animates from one project to the next, with no fractional position in between.
 - The wheel and a touch swipe follow the same rule: one gesture changes exactly one project. Wheel deltas are accumulated to the same 30 px threshold as a swipe, and a gesture ends after 150 ms of quiet, so a trackpad flick and its momentum count as a single step. Horizontal-dominant gestures are left alone, so the gallery-name row keeps its native horizontal scroll. Movement is clamped at both ends, with no overscroll past the first or last project.
-- All project navigation goes through `goToProject(index)`, which clamps and runs the 0.35 s slide: wheel, touch swipe, `ArrowUp`/`ArrowDown`, title clicks and the `+` marker.
+- All project navigation goes through `goToProject(index)`, which clamps and runs the 0.35 s slide: wheel, touch swipe, `ArrowUp`/`ArrowDown`, title clicks and the `i` marker.
 - Keyboard `ArrowUp` and `ArrowDown` change project.
-- Each row has a `+` marker at the right of its title. It is always visible on the selected row and on row hover (desktop), and opens that project's info view. On touch only the selected row accepts taps on it, with a 44 px target.
+- Each row has a circled `i` marker at the right of its title, centred on the selection line so the line passes behind its disc. It is always visible on the selected row and on row hover (desktop), and opens that project's info view. On touch only the selected row accepts taps on it, with a 44 px target.
 - On touch, a vertical swipe anywhere on the gallery panel changes exactly one project (30 px minimum, dominant vertical movement). A 10 px movement threshold separates a tap on a title from a swipe.
 - The gallery-name row (`#gallery-buttons`) scrolls horizontally on its own; its touch events are excluded from the project swipe handler.
 
@@ -117,8 +117,8 @@ Each side of the featured photo has a strip of faint thumbnails for the neighbou
 | Peek click | Photo panel edges | Jump to the clicked slide |
 | Gallery name click | Top bar | Load another gallery file |
 | Project title click | Gallery panel | Select that project |
-| `+` marker click | Gallery panel | Select that project and open its information |
-| `+` key | Page | Open the selected project's information |
+| `i` marker click | Gallery panel | Select that project and open its information |
+| `i` key | Page | Open the selected project's information |
 | Double-click, `f` | Photo panel | Toggle fullscreen |
 | `Escape` | Page | Leave fullscreen, or close the info view |
 
@@ -130,8 +130,8 @@ About and a project's information share one panel, so the two reading tasks beha
 - The panel adds `info-active` to the gallery and photo panels, hides the wheel, the nav, the counter, the photo description and the peek strips, and shows the Back button. The photo itself stays visible on desktop so the note keeps its context.
 - On desktop the gallery widens to `clamp(360px, 45vw, 640px)` (`--gallery-container-info-width`) and the photo panel takes the remaining width; both stay visible.
 - On mobile the gallery expands to `100dvh` and the photo panel collapses to zero height.
-- Back sits at the top-left of the desktop panel and at the bottom-left on mobile, in the About button's place. With `Escape` it closes the view. Focus moves into the text on open. On close it returns to the control that opened the view, or to the element focused before the `+` shortcut; the shortcut never moves focus to the project's `+` marker. The wheel is re-measured on close because it was hidden.
-- Pressing `+` opens the selected project's note without selecting its marker. Modifier combinations (browser zoom) and fullscreen are left alone.
+- Back sits at the top-left of the desktop panel and at the bottom-left on mobile, in the About button's place. With `Escape` it closes the view. Focus moves into the text on open. On close it returns to the control that opened the view, or to the element focused before the `i` shortcut; the shortcut never moves focus to the project's `i` marker. The wheel is re-measured on close because it was hidden.
+- Pressing `i` opens the selected project's note without selecting its marker. Modifier combinations and fullscreen are left alone.
 - While the view is open, project and photo navigation inputs are ignored and the text scrolls natively (`overflow-y: auto`, `touch-action: pan-y`).
 
 ## Photo data and thumbnails

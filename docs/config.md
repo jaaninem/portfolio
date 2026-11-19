@@ -41,7 +41,7 @@ Each gallery file is an array of projects. `galleries/main.json` follows this sh
 | `project-title` | string | yes | Title in the project list |
 | `year` | string or `null` | no | Small label next to the title |
 | `location` | string or `null` | no | Small label next to the title |
-| `info` | string | no | Note shown when the project's `+` marker opens its information view |
+| `info` | string | no | Note shown when the project's circled `i` marker opens its information view |
 | `images` | array | yes | Slides of the project |
 | `images[].image_path` | string | yes | Path under `assets/photos/`, or a glob |
 | `images[].description` | string | no | Caption under the photo; no project uses it currently |
