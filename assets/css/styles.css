@@ -361,8 +361,6 @@ body {
 }
 
 .gallery-nav-btn.about-btn {
-    color: #ae00ff; /* differentiate the About button */
-    font-style: italic;
     margin-right: auto; /* keep About pinned left, push the gallery names right */
     flex-shrink: 0;
 }
@@ -586,7 +584,7 @@ body {
     /* Center the line on the selected project title (title sits at 50% - half its height) */
     top: calc(50% - var(--project-title-height) / 2); 
     transform: translateY(-50%);
-    height: 2px;
+    height: 3px;
     background-color: rgba(0, 64, 255, 0.6);
     pointer-events: none;
     z-index: 0; /* Ensure it's below text but above background */
