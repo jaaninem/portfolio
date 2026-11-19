@@ -43,7 +43,7 @@ docs/             project documentation
 
 ## Tests
 
-Browser checks in `tests/` cover the project list (one project per wheel gesture or swipe) and the info view's focus handling. They are driven by headless Chromium/Chrome through a stdlib-only DevTools harness (`tests/cdp.py`).
+Browser checks in `tests/` cover the project list (one project per wheel gesture or swipe), the info view's focus handling and its split on phones. They are driven by headless Chromium/Chrome through a stdlib-only DevTools harness (`tests/cdp.py`).
 
 ```bash
 python3 tests/test_project_scroll.py

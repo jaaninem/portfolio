@@ -88,7 +88,7 @@ Defined in `:root` in `assets/css/styles.css`; the mobile overrides sit in the `
 | `--gallery-container-width` | `25vw` | Width of the left panel |
 | `--gallery-container-mobile-height` | `25dvh` | Height of the gallery panel on mobile |
 | `--gallery-container-info-width` | `clamp(360px, 45vw, 640px)` | Gallery width while the info view is open (desktop) |
-| `--gallery-container-info-mobile-height` | `100dvh` | Gallery height in the info view on mobile |
+| `--gallery-container-info-mobile-height` | `60dvh` | Gallery height in the info view on mobile; the photo panel takes the remaining `40dvh` |
 | `--gallery-container-info-transition` | `width 0.5s ease-in-out` | Desktop info-view transition |
 | `--gallery-container-info-transition-mobile` | `height 0.5s ease-in-out` | Mobile info-view transition |
 | `--gallery-elements-animation` | `fadeIn 0.5s ease` | Fade used when gallery elements appear |

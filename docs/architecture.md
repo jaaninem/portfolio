@@ -127,9 +127,9 @@ Each side of the featured photo has a strip of faint thumbnails for the neighbou
 About and a project's information share one panel, so the two reading tasks behave the same.
 
 - `openInfo('about')` shows `#about-text`; `openInfo('project', trigger, project)` fills `#project-info` with the title, a `year · location` line and the `info` note. Each text block is a `.info-content` column of at most `44ch`.
-- The panel adds `info-active` to the gallery and photo panels, hides the wheel, the nav, the counter, the photo description and the peek strips, and shows the Back button. The photo itself stays visible on desktop so the note keeps its context.
+- The panel adds `info-active` to the gallery and photo panels, hides the wheel, the nav, the counter, the photo description and the peek strips, and shows the Back button. The photo itself stays visible at every viewport so the note keeps its context.
 - On desktop the gallery widens to `clamp(360px, 45vw, 640px)` (`--gallery-container-info-width`) and the photo panel takes the remaining width; both stay visible.
-- On mobile the gallery expands to `100dvh` and the photo panel collapses to zero height.
+- On mobile the gallery takes the bottom `60dvh` (`--gallery-container-info-mobile-height`) and the photo panel the remaining `40dvh` above it, so the selected photo stays visible while reading. Both panels animate with the height transition.
 - Back sits at the top-left of the desktop panel and at the bottom-left on mobile, in the About button's place. With `Escape` it closes the view. Focus moves into the text on open. On close it returns to the control that opened the view, or to the element focused before the `i` shortcut; the shortcut never moves focus to the project's `i` marker. The wheel is re-measured on close because it was hidden.
 - Pressing `i` opens the selected project's note without selecting its marker. Modifier combinations and fullscreen are left alone.
 - While the view is open, project and photo navigation inputs are ignored and the text scrolls natively (`overflow-y: auto`, `touch-action: pan-y`).

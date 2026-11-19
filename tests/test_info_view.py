@@ -1,8 +1,12 @@
-"""Focus behaviour of the project information view.
+"""Focus and layout behaviour of the project information view.
 
 The `i` shortcut has to open the selected project's note without moving focus to
 that project's marker, so pressing `Escape` does not leave a focus ring there.
 Clicking the marker keeps the usual "return focus to the trigger" behaviour.
+
+On a phone the reading panel must not take the whole screen: it keeps a fixed
+share of the viewport at the bottom and leaves the selected photo visible above
+it.
 
 Run directly:
 
@@ -55,6 +59,117 @@ def click(session: BrowserSession, x: float, y: float) -> None:
         {"type": "mouseReleased", "button": "left", "clickCount": 1},
     ):
         session.call("Input.dispatchMouseEvent", {**event, "x": x, "y": y})
+
+
+PHONE_WIDTH = 390
+PHONE_HEIGHT = 844
+INFO_PANEL_SHARE = (
+    0.6  # --gallery-container-info-mobile-height, as a share of the viewport
+)
+TOLERANCE = 2  # px, for rounding and the settled transition
+
+
+def layout(session: BrowserSession) -> dict[str, Any]:
+    """Panel, photo and visible info text geometry, in CSS pixels."""
+    return session.js("""(() => {
+        const rect = (id) => {
+            const box = document.getElementById(id).getBoundingClientRect();
+            return {
+                top: box.top,
+                bottom: box.bottom,
+                width: box.width,
+                height: box.height,
+            };
+        };
+        const content = [...document.querySelectorAll('.info-content')]
+            .find(element => !element.classList.contains('hidden'));
+        const contentBox = content ? content.getBoundingClientRect() : null;
+        return {
+            viewport: { width: window.innerWidth, height: window.innerHeight },
+            panel: rect('gallery-container'),
+            photoPanel: rect('main-display'),
+            photo: rect('featured-image'),
+            content: contentBox === null ? null : {
+                top: contentBox.top,
+                bottom: contentBox.bottom,
+                clientHeight: content.clientHeight,
+                scrollHeight: content.scrollHeight,
+                text: content.textContent.trim().length,
+            },
+        };
+    })()""")
+
+
+def assert_split_keeps_photo_visible(observed: dict[str, Any], label: str) -> None:
+    """The reading panel keeps its share; the photo stays fully visible above it."""
+    viewport_height = observed["viewport"]["height"]
+    panel = observed["panel"]
+    photo_panel = observed["photoPanel"]
+    photo = observed["photo"]
+    content = observed["content"]
+
+    expected = viewport_height * INFO_PANEL_SHARE
+    assert abs(panel["height"] - expected) <= TOLERANCE, (
+        f"the {label} panel should keep {INFO_PANEL_SHARE:.0%} of the viewport"
+        f" ({expected:.0f} px), got {panel['height']:.0f} px: {observed}"
+    )
+    assert abs(panel["bottom"] - viewport_height) <= TOLERANCE, (
+        f"the {label} panel should stay anchored to the bottom: {observed}"
+    )
+    assert photo_panel["height"] > 0, (
+        f"the photo panel should keep the remaining height: {observed}"
+    )
+    assert photo_panel["bottom"] <= panel["top"] + TOLERANCE, (
+        f"the photo panel should sit above the {label} panel: {observed}"
+    )
+    assert photo["width"] > 0 and photo["height"] > 0, (
+        f"the photo should stay visible above the {label} panel: {observed}"
+    )
+    assert photo["top"] >= photo_panel["top"] - TOLERANCE, (
+        f"the photo should not overflow the top of its panel: {observed}"
+    )
+    assert photo["bottom"] <= photo_panel["bottom"] + TOLERANCE, (
+        f"the photo should not overflow the bottom of its panel: {observed}"
+    )
+    assert content is not None and content["text"] > 0, (
+        f"the {label} view should show its text: {observed}"
+    )
+    assert content["top"] >= panel["top"] - TOLERANCE, (
+        f"the {label} text should start inside its panel: {observed}"
+    )
+    assert content["bottom"] <= panel["bottom"] + TOLERANCE, (
+        f"the {label} text should stay inside its panel: {observed}"
+    )
+
+
+def test_info_view_mobile_layout() -> None:
+    if not find_browser():
+        skip_without_browser()
+
+    with BrowserSession(ROOT, PHONE_WIDTH, PHONE_HEIGHT) as session:
+        session.set_viewport(PHONE_WIDTH, PHONE_HEIGHT, mobile=True)
+        session.wait(400)
+
+        # About keeps the photo visible above the text.
+        session.js("document.getElementById('about').click()")
+        session.wait(800)
+        assert state(session)["info"] is True, "About should open the info view"
+        assert_split_keeps_photo_visible(layout(session), "About")
+
+        session.key("Escape", "Escape", 27)
+        session.wait(700)
+        assert state(session)["info"] is False, "Escape should close the info view"
+
+        # A project note uses the same split.
+        session.js("""document.querySelectorAll('.project-title')[0]
+            .querySelector('.project-info-btn').click()""")
+        session.wait(800)
+        assert state(session)["info"] is True, "the marker should open the project note"
+        assert_split_keeps_photo_visible(layout(session), "project note")
+
+        assert not session.exceptions, f"the page raised errors: {session.exceptions}"
+
+    print("all mobile info view layout checks passed")
 
 
 def test_info_view_focus() -> None:
@@ -130,3 +245,4 @@ def test_info_view_focus() -> None:
 
 if __name__ == "__main__":
     test_info_view_focus()
+    test_info_view_mobile_layout()

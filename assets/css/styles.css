@@ -16,7 +16,7 @@
     --gallery-container-width: 25vw; /* Width of the gallery container */
     --gallery-container-mobile-height: 25dvh; /* Height of the gallery container on mobile */
     --gallery-container-info-width: clamp(360px, 45vw, 640px); /* Width of the gallery container when the info view is open */
-    --gallery-container-info-mobile-height: 100dvh; /* Height of the gallery container when the info view is open on mobile */
+    --gallery-container-info-mobile-height: 60dvh; /* Height of the gallery container when the info view is open on mobile; the photo panel keeps the remaining 40dvh */
     --gallery-container-info-transition: width 0.5s ease-in-out;
     --gallery-container-info-transition-mobile: height 0.5s ease-in-out;
     --gallery-elements-animation: fadeIn 0.5s ease;
@@ -740,9 +740,11 @@ body {
         transition: var(--gallery-container-info-transition-mobile);
     }
 
+    /* The photo panel keeps the space the reading panel does not take, so the
+       selected photo stays visible above the text. */
     #main-display.info-active {
         width: 100%;
-        height: 0;
+        height: calc(100dvh - var(--gallery-container-info-mobile-height));
         transition: var(--gallery-container-info-transition-mobile);
         padding: 0 0;
     }
