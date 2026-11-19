@@ -15,11 +15,12 @@
     --gallery-mobile-font-scale: 0.7; /* Scale factor for gallery-container text on mobile (1 = unchanged) */
     --gallery-container-width: 25vw; /* Width of the gallery container */
     --gallery-container-mobile-height: 25dvh; /* Height of the gallery container on mobile */
-    --gallery-container-about-width: 60vw; /* Width of the gallery container when in about mode */
-    --gallery-container-about-mobile-height: 100dvh; /* Height of the gallery container when in about mode on mobile */
-    --gallery-container-about-transition: width 0.5s ease-in-out;
-    --gallery-container-about-transition-mobile: height 0.5s ease-in-out;
+    --gallery-container-info-width: 60vw; /* Width of the gallery container when the info view is open */
+    --gallery-container-info-mobile-height: 100dvh; /* Height of the gallery container when the info view is open on mobile */
+    --gallery-container-info-transition: width 0.5s ease-in-out;
+    --gallery-container-info-transition-mobile: height 0.5s ease-in-out;
     --gallery-elements-animation: fadeIn 0.5s ease;
+    --info-content-measure: 44ch; /* comfortable line length for About and project info */
     --peek-width: clamp(26px, 3.2vw, 46px); /* Neighbour peek thumbnail width */
     --peek-gap: 10px; /* Space between the featured photo and its peeks */
     --peek-spacing: 8px; /* Space between two thumbnails in the same strip */
@@ -55,6 +56,14 @@ body {
     display: none;
 }
 
+/* The nav and the peek strips set their own display; keep .hidden winning
+   while the info view replaces them. */
+#gallery-nav.hidden,
+#prev-peeks.hidden,
+#next-peeks.hidden {
+    display: none;
+}
+
 .container {
     display: flex;
     flex-direction: row;
@@ -81,7 +90,7 @@ body {
     display: flex;
     align-items: center;
     resize: horizontal;
-    transition: var(--gallery-container-about-transition);
+    transition: var(--gallery-container-info-transition);
     touch-action: pan-x; /* Allow the gallery-name row to scroll horizontally; vertical handled by JS */
     -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
     overflow: hidden;
@@ -149,15 +158,71 @@ body {
     align-items: center; /* Ensure text is vertically centered */
     justify-content: center;
     width: max-content; /* size to the text, only wrap when out of room */
-    max-width: 100%; /* cap so very long titles still wrap instead of overflowing */
-    text-wrap: balance; /* balance lines nicely if wrapping does happen */
+    max-width: calc(100% - 80px); /* leave room for the info marker on the right */
     position: relative; /* Add this for proper stacking */
     z-index: 10; /* Ensure text is above the cursor line */
     /* Add this margin to shift titles down slightly */
     margin-top: 0px;
-    overflow-wrap: break-word; /* Break long words if needed */
 	letter-spacing: 0px;
 }
+
+.project-title-text {
+    text-wrap: balance; /* balance lines nicely if wrapping does happen */
+    overflow-wrap: break-word; /* Break long words if needed */
+}
+
+/* Info marker: opens the project's information view. It stays out of the way
+   until the row is selected or hovered, so the wheel remains typographic. */
+.project-info-btn {
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 4px; /* superscript: clear of the selection line */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #555;
+    font-family: inherit;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease-out, color 0.15s ease-out;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.project-title.active .project-info-btn,
+.project-info-btn:focus-visible {
+    opacity: 1;
+}
+
+@media (hover: hover) {
+    .project-title:hover .project-info-btn {
+        opacity: 1;
+    }
+    .project-info-btn:hover {
+        color: #ae00ff;
+    }
+}
+
+/* Touch screens have no hover: only the selected row advertises the marker,
+   with a full-size tap target. */
+@media (hover: none) {
+    .project-info-btn {
+        pointer-events: none;
+        top: -4px; /* centre the glyph above the selection line */
+        width: 44px;
+        height: 44px;
+    }
+    .project-title.active .project-info-btn {
+        pointer-events: auto;
+    }
+}
+
 /* Hover effects only on devices that actually hover (no sticky hover on touch) */
 @media (hover: hover) {
     .project-title:hover {
@@ -196,46 +261,47 @@ body {
 }
 */
 
-#about-text{
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+/* Info view: About and per-project information share one reading panel.
+   The panel sits in the gallery column, which widens while it is open. */
+.info-content {
     width: 100%;
-    height: 100%;
-    padding: 40px 30px;
+    max-width: var(--info-content-measure);
+    max-height: 100%;
+    margin: 0 auto;
+    padding: 40px 30px calc(56px + env(safe-area-inset-bottom));
     box-sizing: border-box;
-    font-family: "SilkaMono", sans-serif;/*--var(--font-family), serif; */
+    font-family: "SilkaMono", sans-serif;
     font-size: 1.15rem;
+    line-height: 1.7;
     color: #222;
     overflow-y: auto;
-    animation: var(--gallery-elements-animation);
-    /*animation: aboutTextLineFadeIn 1s steps(1, end) forwards; */
+    overscroll-behavior: contain;
+    touch-action: pan-y; /* the gallery panel is pan-x: text needs vertical scroll */
+    animation: fadeIn 0.35s ease;
+    outline: none; /* focused programmatically when the info view opens */
 }
 
-/*
-
-@keyframes aboutTextLineFadeIn {
-    0% {
-        opacity: 0;
-    }
-    1% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 1;
-    }
-}*/
-#about-text {
-    animation: aboutTextLineFadeIn 1s steps(10, end) forwards;
-}
-#about-text p {
-    opacity: 0;
-    animation: aboutTextLineFadeIn 1s steps(1, end) forwards;
-    animation-delay: calc(var(--line) * 0.2s);
-}
-
-#about-text a {
+#about-text a,
+#project-info a {
     color: #ae00ff;
+}
+
+#project-info-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    line-height: 1.25;
+    margin-bottom: 8px;
+}
+
+.info-meta {
+    color: grey;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    margin-bottom: 1.4em;
+}
+
+#project-info-note {
+    white-space: pre-wrap;
 }
 
 #back {
@@ -249,7 +315,6 @@ body {
     letter-spacing: 1px;
     z-index: 100;
     animation: var(--gallery-elements-animation);
-    transition: var(--gallery-elements-about-transition);
     /*box-shadow: 0 10px 10px rgba(0,0,0,0.2); */
 }
 
@@ -515,17 +580,23 @@ body {
 
 }
 
-/* About Section */
+/* Info view: About and project information share these rules */
 
-#gallery-container.about-active {
-    width: var(--gallery-container-about-width);
-    transition: var(--gallery-container-about-transition);
+#gallery-container.info-active {
+    width: var(--gallery-container-info-width);
+    transition: var(--gallery-container-info-transition);
+    resize: none; /* the wheel becomes a reading panel while open */
+}
+
+/* Keep the photo visible beside the widened panel */
+#main-display.info-active {
+    width: calc(100vw - var(--gallery-container-info-width));
+    transition: var(--gallery-container-info-transition);
 }
 
 /*
 #name.hidden, #about.hidden, #back.hidden, #about-text.hidden {
     opacity: 0; 
-    transition: var(--gallery-elements-about-transition);
     display: none;
 }
 */
@@ -589,8 +660,9 @@ body {
     .additional-infos {
         font-size: calc(1rem * var(--gallery-mobile-font-scale));
     }
-    #about-text {
+    .info-content {
         font-size: calc(1.15rem * var(--gallery-mobile-font-scale));
+        padding: 30px 24px calc(48px + env(safe-area-inset-bottom));
     }
     .gallery-nav-btn,
     #back {
@@ -605,7 +677,7 @@ body {
         padding-left: 0;
     }
     .project-title {
-        max-width: calc(100% - 80px);
+        max-width: calc(100% - 120px);
     }
 
     #main-display {
@@ -641,15 +713,16 @@ body {
         font-size: 1.8rem;
     }
 
-    #gallery-container.about-active {
+    #gallery-container.info-active {
         width: 100%;
-        height: var(--gallery-container-about-mobile-height);
-        transition: var(--gallery-container-about-transition-mobile);
+        height: var(--gallery-container-info-mobile-height);
+        transition: var(--gallery-container-info-transition-mobile);
     }
 
-    #main-display.about-active {
+    #main-display.info-active {
+        width: 100%;
         height: 0;
-        transition: var(--gallery-container-about-transition-mobile);
+        transition: var(--gallery-container-info-transition-mobile);
         padding: 0 0;
     }
 

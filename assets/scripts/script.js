@@ -97,6 +97,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let imageIndices = {};
         // the projects currently displayed (swapped when switching galleries)
         let currentProjects = projects;
+        // which info view is open: null, 'about' or 'project'
+        let infoMode = null;
+        // the element that opened the info view, so focus can return to it
+        let infoTrigger = null;
 
         // Add project titles to gallery
         function renderProjects() {
@@ -110,8 +114,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const projectTitle = document.createElement('div');
                 projectTitle.classList.add('project-title');
-                projectTitle.textContent = project['project-title'];
-                
+
+                const titleText = document.createElement('span');
+                titleText.classList.add('project-title-text');
+                titleText.textContent = project['project-title'];
+
+                const infoBtn = document.createElement('button');
+                infoBtn.type = 'button';
+                infoBtn.className = 'project-info-btn';
+                infoBtn.textContent = '+';
+                infoBtn.setAttribute('aria-label', `Show information about ${project['project-title']}`);
+
+                projectTitle.append(titleText, infoBtn);
+
                 if (index === 0) {
                     projectTitle.classList.add('active');
                 }
@@ -144,6 +159,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     projectTransition(index);
                 }
 
+                // The info marker selects the project, then opens its note, so
+                // the photo behind the panel belongs to the text on screen.
+                infoBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    projectTransition(index);
+                    openInfo('project', infoBtn, project);
+                });
+
                 // Append projectTitle after year and location
                 projectContainer.appendChild(projectTitle);
                 projectContainer.appendChild(additionalInfos)
@@ -168,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Keep the scroll step in sync when crossing the mobile/desktop breakpoint
         function onViewportResize() {
+            if (infoMode) return; // wheel hidden: re-measured in closeInfo()
             projectHeight = readProjectHeight();
             currentPosition = project_index * projectHeight;
             projectGallery.style.transition = 'none';
@@ -549,12 +573,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Wheel event (desktop)
         galleryContainer.addEventListener('wheel', (e) => {
+            if (infoMode) return; // let the info text scroll natively
             e.preventDefault();
             handleScroll(e.deltaY);
         });
 
         // Touch events (mobile) - a swipe always switches exactly one project
         galleryContainer.addEventListener('touchstart', (e) => {
+            if (infoMode) return; // the info text scrolls, it does not swipe projects
             if (e.target.closest('.gallery-buttons')) return; // let the gallery-name row scroll natively
             if (e.touches.length > 0) {
                 swipeStartX = e.touches[0].clientX;
@@ -564,6 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         galleryContainer.addEventListener('touchmove', (e) => {
+            if (infoMode) return;
             if (e.target.closest('.gallery-buttons')) return; // don't hijack the gallery-name scroll
             if (e.touches.length === 0) return;
             const dx = e.touches[0].clientX - swipeStartX;
@@ -578,6 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { passive: false });
 
         galleryContainer.addEventListener('touchend', (e) => {
+            if (infoMode) return;
             if (!swipeMoved) return; // a tap: let the title's click select it
             const dx = e.changedTouches[0].clientX - swipeStartX;
             const dy = e.changedTouches[0].clientY - swipeStartY;
@@ -633,6 +661,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Keyboard navigation
         document.addEventListener('keydown', (e) => {
+            if (infoMode) {
+                if (e.key === 'Escape') closeInfo();
+                return; // the info text is the only thing keyboard users act on
+            }
             if (e.key === 'ArrowUp') {
                 if (project_index > 0) {
                     newIndex = project_index - 1;
@@ -689,47 +721,77 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // About button logic
+        // --- Info view -------------------------------------------------
+        // About and per-project information share the gallery column: it
+        // widens (see .info-active in styles.css) and the wheel gives way to
+        // the text, while the photo panel narrows but stays visible.
         const backBtn = document.getElementById('back');
         const aboutBtn = document.getElementById('about');
         const aboutText = document.getElementById('about-text');
+        const projectInfo = document.getElementById('project-info');
+        const projectInfoTitle = document.getElementById('project-info-title');
+        const projectInfoMeta = document.getElementById('project-info-meta');
+        const projectInfoNote = document.getElementById('project-info-note');
         const cursorLine = document.getElementById('cursor-line');
         const photoInfo = document.getElementById('photo-info');
 
-        const normalModeElements = [projectGallery, mainDisplay, cursorLine, galleryNav, imageContainer, photoInfo];
-        const aboutModeElements = [aboutText, backBtn];
+        // Hidden while reading. The photo and its container stay visible.
+        const normalModeElements = [projectGallery, cursorLine, galleryNav, photoInfo, prevStrip, nextStrip];
 
-        aboutBtn.addEventListener('click', aboutBtnFunction);
-        //aboutBtn.addEventListener('touchend', aboutBtnFunction);
+        aboutBtn.addEventListener('click', () => openInfo('about', aboutBtn));
+        backBtn.addEventListener('click', closeInfo);
 
-        function aboutBtnFunction() {
-            // Expand gallery-container
-            galleryContainer.classList.add('about-active');
-            mainDisplay.classList.add('about-active');
-
-            normalModeElements.forEach(elem => {
-                if (elem) elem.classList.add('hidden');
-            });
-            aboutModeElements.forEach(elem => {
-                if (elem) elem.classList.remove('hidden');
-            });
-
+        function renderProjectInfo(project) {
+            projectInfoTitle.textContent = project['project-title'] || '';
+            const meta = [project.year, project.location].filter(Boolean).join(' · ');
+            projectInfoMeta.textContent = meta;
+            projectInfoMeta.classList.toggle('hidden', !meta);
+            projectInfoNote.textContent = project.info || '';
+            projectInfoNote.classList.toggle('hidden', !project.info);
         }
 
-        backBtn.addEventListener('click', backBtnFunction);
-        //backBtn.addEventListener('touchend', backBtnFunction);
+        function openInfo(mode, trigger, project) {
+            if (mode === 'project') {
+                renderProjectInfo(project);
+                aboutText.classList.add('hidden');
+                projectInfo.classList.remove('hidden');
+            } else {
+                projectInfo.classList.add('hidden');
+                aboutText.classList.remove('hidden');
+            }
 
-        function backBtnFunction() {
-            // Restore gallery-container
-            galleryContainer.classList.remove('about-active');
-            mainDisplay.classList.remove('about-active');
-            
-            normalModeElements.forEach(elem => {
-                if (elem) elem.classList.remove('hidden');
-            });
-            aboutModeElements.forEach(elem => {
-                if (elem) elem.classList.add('hidden');
-            });
+            infoMode = mode;
+            infoTrigger = trigger || null;
+
+            galleryContainer.classList.add('info-active');
+            mainDisplay.classList.add('info-active');
+            normalModeElements.forEach(elem => elem && elem.classList.add('hidden'));
+            backBtn.classList.remove('hidden');
+
+            // Land keyboard and screen-reader users in the text
+            const target = mode === 'project' ? projectInfo : aboutText;
+            target.scrollTop = 0;
+            target.focus({ preventScroll: true });
+        }
+
+        function closeInfo() {
+            if (!infoMode) return;
+            infoMode = null;
+
+            galleryContainer.classList.remove('info-active');
+            mainDisplay.classList.remove('info-active');
+            normalModeElements.forEach(elem => elem && elem.classList.remove('hidden'));
+            backBtn.classList.add('hidden');
+            aboutText.classList.add('hidden');
+            projectInfo.classList.add('hidden');
+
+            // The wheel was hidden while open, so re-measure it before use.
+            onViewportResize();
+
+            if (infoTrigger) {
+                infoTrigger.focus({ preventScroll: true });
+                infoTrigger = null;
+            }
         }
 
         function updateProject() {
@@ -761,6 +823,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Keyboard navigation
             document.addEventListener('keydown', (e) => {
+                if (infoMode) return;
                 if (e.key === 'ArrowLeft') {
                     showPrevImage();
                 } else if (e.key === 'ArrowRight') {
@@ -770,6 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let wheelDelta = 0;
             mainDisplay.addEventListener('wheel', (e) => {
+                if (infoMode) return;
                 wheelDelta += e.deltaY;
                 const threshold = 100; // Increase this value for longer scroll to trigger
 
@@ -886,6 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 */
 
                 mainDisplay.addEventListener('dblclick', (e) => {
+                    if (infoMode) return;
                     if (e.target.closest('.peek')) return; // double-clicking a peek must not toggle fullscreen
                     if (!document.fullscreenElement) {
                         enterFullscreen();
@@ -896,6 +961,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Press 'f' to fullscreen
                 document.addEventListener('keydown', (e) => {
+                    if (infoMode) return;
                     if (e.key === 'f' && !document.fullscreenElement) {
                         enterFullscreen();
                     }

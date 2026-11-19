@@ -3,7 +3,7 @@
 		"project-title": "AXE-X",
 		"year": "2026",
 		"location": null,
-		"end-text": "Editorial project for Valentin Meghit's diploma",
+		"info": "Editorial project for Valentin Meghit's diploma",
 		"images":
 		[
 			{
@@ -16,7 +16,7 @@
 		"project-title": "LOBI",
 		"year": null,
 		"location": null,
-		"end-text": "Editorial project for Léa Perrelet's diploma",
+		"info": "Editorial project for Léa Perrelet's diploma",
 		"images":
 		[
 			{
@@ -43,7 +43,7 @@
 		"project-title": "TAP OUT",
 		"year": "2025",
 		"location": null,
-		"end-text": "Book made in collaboration with Isabelle Virnot, supervised by Anouk Agabekov-Schneider and Nicolas Polli",
+		"info": "Book made in collaboration with Isabelle Virnot, supervised by Anouk Agabekov-Schneider and Nicolas Polli",
 		"images":
 		[
 			{
@@ -118,7 +118,7 @@
 		"project-title": "DUNES",
 		"year": null,
 		"location": null,
-		"end-text": "Editorial project supervised by Charlotte Krieger",
+		"info": "Editorial project supervised by Charlotte Krieger",
 		"images":
 		[
 			{

@@ -10,7 +10,7 @@
     <div class="container">
         <!-- Scrollable Thumbnail Gallery (Left Sidebar) -->
         <div class="main-component" id="gallery-container">
-            <span class="hidden" id="about-text">
+            <div class="hidden info-content" id="about-text" tabindex="-1">
 				Janine Agbayani is a Filipino-Swiss photographer based in Lausanne, Switzerland. She is currently finishing her Bachelor's at ECAL.<br>
 				<br>
 				contact:<br>
@@ -19,7 +19,12 @@
 				<a href="https://instagram.com/jaanin_ea">@jaanin_ea</a><br>
 				<br>
 				Website coded by Anoush Azar-Pey<br>
-            </span> 
+            </div>
+            <div class="hidden info-content" id="project-info" tabindex="-1">
+                <h2 id="project-info-title"></h2>
+                <p class="info-meta" id="project-info-meta"></p>
+                <p id="project-info-note"></p>
+            </div>
 			<div id="gallery-nav" class="gallery-nav">
 				<button id="about" class="gallery-nav-btn about-btn">About</button>
 				<div id="gallery-buttons" class="gallery-buttons"></div>
