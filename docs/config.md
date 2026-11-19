@@ -115,8 +115,8 @@ These are constants in `assets/scripts/script.js`, not user-facing settings:
 | Project swipe threshold | `30` px | Vertical swipe distance on the gallery panel |
 | Tap threshold | `10` px | Below this a touch is a tap, not a swipe |
 | Peek edge inset (`PEEK_EDGE`) | `2` px | Minimum distance between a strip and the panel edge |
-| Peek strip cap (`PEEK_MAX`) | `5` | Maximum thumbnails per side on desktop |
-| Mobile peek breakpoint | `(max-width: 768px)` | Below this each strip shows exactly one thumbnail |
+| Peek strip cap (`PEEK_MAX`) | `5` | Maximum thumbnails per side, at every viewport |
+| Peek capacity | measured gutter | Thumbnails that fit beside the photo; at least one per side when a neighbour exists |
 | `PREFETCH_DELAY` | `300` ms | Idle time before the neighbouring originals are fetched |
 | `PREFETCH_LIMIT` | `6` | Loaded originals kept in the in-document prefetch cache |
 

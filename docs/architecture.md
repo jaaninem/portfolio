@@ -89,8 +89,8 @@ Each side of the featured photo has a strip of faint thumbnails for the neighbou
 
 - `refreshPeeks()` measures the gutter on each side of the featured photo and computes a capacity:
   - `floor((gutter - 2 px - gap + spacing) / (peek width + spacing))`, capped at five per side;
-  - exactly one thumbnail per side below the 768 px mobile breakpoint;
-  - at least one per side, as before, even when the gap has to compress.
+  - at least one thumbnail per side whenever that side has a neighbour, even when the gutter is too narrow: the strip is then clamped to the panel edge instead of shrinking the photo.
+- The same rule applies at every viewport, phones included. Phones hold fewer thumbnails only because their gutter and their CSS thumbnails are smaller: the phone layout's side gutter fits one, tablets and wide windows fit two to five.
 - `peekItems()` walks outwards from the current slide and returns up to that many slides per side:
   - left: the images before the current one;
   - right: the images after it, stopping at the last photo;

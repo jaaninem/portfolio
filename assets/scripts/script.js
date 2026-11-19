@@ -257,7 +257,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const PEEK_MAX = 5; // upper bound of thumbnails per side
         const PEEK_EDGE = 2; // minimum distance between a strip and the panel edge
-        const PEEK_MOBILE_QUERY = '(max-width: 768px)';
 
         // Custom properties holding a clamp() keep their token text when read
         // back, so measure a hidden probe element for the resolved width.
@@ -280,8 +279,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // How many thumbnails fit between the photo's edge and the panel edge.
+        // The rule is the same at every viewport: phones fit fewer because their
+        // gutter and their thumbnails are smaller, not because of a special case.
         function peekCapacity(gutter, metrics) {
-            if (window.matchMedia(PEEK_MOBILE_QUERY).matches) return 1;
             const usable = gutter - PEEK_EDGE - metrics.gap + metrics.spacing;
             const fit = Math.floor(usable / (metrics.width + metrics.spacing));
             return Math.min(PEEK_MAX, Math.max(1, fit));
