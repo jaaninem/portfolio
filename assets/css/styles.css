@@ -21,7 +21,6 @@
     --gallery-container-about-transition-mobile: height 0.5s ease-in-out;
     --gallery-elements-animation: fadeIn 0.5s ease;
     --peek-width: clamp(26px, 3.2vw, 46px); /* Neighbour peek thumbnail width */
-    --peek-text-width: calc(var(--peek-width) * 0.78); /* End-of-series "Fin" card width */
     --peek-gap: 10px; /* Space between the featured photo and its peeks */
     --peek-spacing: 8px; /* Space between two thumbnails in the same strip */
     --peek-opacity: 0.28; /* Resting opacity of the nearest peek */
@@ -385,21 +384,6 @@ body {
     color: black;/* #ddd;*/
 }
 
-/* End-of-project text slide */
-#project-end-text {
-    margin: 0 auto; /* center the text box within the display panel */
-    max-width: 70%;
-    max-height: 100%;
-    overflow-y: auto;
-    text-align: center;
-    font-family: "SilkaMono", sans-serif;
-    font-size: 1.3rem;
-    line-height: 1.7;
-    color: #222;
-    animation: fadeIn 0.5s ease;
-    white-space: pre-wrap;
-}
-
 
 /* Neighbour photo peeks: faint thumbnails of the adjacent slides, arranged as
    a strip on each side of the featured photo. The strips stand in for the old
@@ -457,29 +441,6 @@ body {
     height: auto;
     border-radius: 1px;
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
-}
-
-/* End-of-series slide: a tiny paper card instead of a photo preview */
-.peek.is-text {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--peek-text-width);
-    aspect-ratio: 3 / 4;
-    background: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.25);
-    color: #222;
-    font-size: calc(var(--peek-width) * 0.28);
-    letter-spacing: 0.04em;
-    line-height: 1;
-}
-
-.peek.is-text .peek-img {
-    display: none;
-}
-
-.peek:not(.is-text) .peek-label {
-    display: none;
 }
 
 /* Each step away from the photo fades further, so the strip reads as depth */

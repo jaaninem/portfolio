@@ -233,7 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // the adjacent slides. The strips sit in the panel's white gutter and
         // hold as many thumbnails as fit, so the featured photo keeps its size.
         const featuredImg = document.getElementById('featured-image');
-        const endTextElem = document.getElementById('project-end-text');
         const prevStrip = document.getElementById('prev-peeks');
         const nextStrip = document.getElementById('next-peeks');
 
@@ -270,21 +269,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // The slides up to `count` steps away on one side of the current one.
-        // The end-of-series slide becomes a text card and always ends the strip.
-        function peekItems(project, index, hasEndText, totalImages, direction, count) {
-            const lastSlide = hasEndText ? totalImages : totalImages - 1;
+        function peekItems(project, index, totalImages, direction, count) {
             const items = [];
             for (let step = 1; step <= count; step += 1) {
                 const slide = index + direction * step;
-                if (slide < 0 || slide > lastSlide) break;
-                if (hasEndText && slide === totalImages) {
-                    items.push({
-                        slide,
-                        text: true,
-                        label: step === 1 ? 'End of series' : `End of series (${step} ahead)`,
-                    });
-                    break;
-                }
+                if (slide < 0 || slide >= totalImages) break;
                 items.push({
                     slide,
                     path: project.images[slide].image_path,
@@ -297,13 +286,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Which slides sit on each side of the current one (prefetch only).
-        function neighbourPaths(project, index, hasEndText, totalImages) {
-            const lastSlide = hasEndText ? totalImages : totalImages - 1;
+        function neighbourPaths(project, index, totalImages) {
             return {
                 prev: index > 0 ? project.images[index - 1].image_path : null,
-                next: index < lastSlide && !(hasEndText && index === totalImages - 1)
-                    ? project.images[index + 1].image_path
-                    : null,
+                next: index < totalImages - 1 ? project.images[index + 1].image_path : null,
             };
         }
 
@@ -323,25 +309,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 image.dataset.fallback = '1';
                 image.src = `assets/photos/${path}`;
             });
-            const label = document.createElement('span');
-            label.className = 'peek-label';
-            label.setAttribute('aria-hidden', 'true');
-            label.textContent = 'Fin';
-            button.append(image, label);
+            button.append(image);
             return button;
         }
 
         function applyPeek(button, item) {
             button.dataset.slide = String(item.slide);
             button.setAttribute('aria-label', item.label);
-            button.classList.toggle('is-text', !!item.text);
             const image = button.querySelector('.peek-img');
-            if (item.text) {
-                image.removeAttribute('src');
-                image.dataset.path = '';
-                image.dataset.fallback = '';
-                return;
-            }
             if (image.dataset.path !== item.path) {
                 image.dataset.path = item.path;
                 image.dataset.fallback = '';
@@ -364,11 +339,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Where the photo (or the end-text block) sits inside the panel.
+        // Where the photo sits inside the panel.
         function peekGeometry() {
             const panelRect = mainDisplay.getBoundingClientRect();
-            const reference = featuredImg.style.display === 'none' ? endTextElem : featuredImg;
-            const referenceRect = reference.getBoundingClientRect();
+            const referenceRect = featuredImg.getBoundingClientRect();
             if (!referenceRect.width) return null;
             return {
                 panelWidth: panelRect.width,
@@ -402,21 +376,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!peekContext) return;
             const geometry = peekGeometry();
             if (!geometry) return;
-            const { project, index, hasEndText, totalImages } = peekContext;
+            const { project, index, totalImages } = peekContext;
             const metrics = peekMetrics();
             const counts = {
                 prev: peekCapacity(geometry.referenceLeft, metrics),
                 next: peekCapacity(geometry.panelWidth - geometry.referenceRight, metrics),
             };
-            renderPeekStrip(prevStrip, peekItems(project, index, hasEndText, totalImages, -1, counts.prev));
-            renderPeekStrip(nextStrip, peekItems(project, index, hasEndText, totalImages, 1, counts.next));
+            renderPeekStrip(prevStrip, peekItems(project, index, totalImages, -1, counts.prev));
+            renderPeekStrip(nextStrip, peekItems(project, index, totalImages, 1, counts.next));
             positionPeekStrips(geometry, metrics);
             preloadPeekThumbnails(project, index, totalImages, Math.max(counts.prev, counts.next));
         }
 
         // Show the peeks for the current slide: remember the context, then build.
-        function updatePeeks(project, index, hasEndText, totalImages) {
-            peekContext = { project, index, hasEndText, totalImages };
+        function updatePeeks(project, index, totalImages) {
+            peekContext = { project, index, totalImages };
             refreshPeeks();
         }
 
@@ -470,10 +444,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Fetch the originals on both sides once the user pauses, so rapid
         // swipes do not download slides that are skipped.
-        function scheduleNeighbourPrefetch(project, index, hasEndText, totalImages) {
+        function scheduleNeighbourPrefetch(project, index, totalImages) {
             clearTimeout(prefetchTimer);
             prefetchTimer = setTimeout(() => {
-                const neighbours = neighbourPaths(project, index, hasEndText, totalImages);
+                const neighbours = neighbourPaths(project, index, totalImages);
                 [neighbours.prev, neighbours.next].forEach(path => {
                     if (path) prefetchPhoto(`assets/photos/${path}`);
                 });
@@ -767,8 +741,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let image_index = imageIndices[project_index] || 0; 
             const project = currentProjects[project_index];
             const totalImages = project.images.length;
-            const hasEndText = !!(project['end-text']);
-            const totalSlides = totalImages + (hasEndText ? 1 : 0);
             /*const photoTitle = document.getElementById('photo-title');*/
             const imageDesc = document.getElementById('photo-description');
 
@@ -810,10 +782,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }, { signal: projectSignal });
 
-            // Jump straight to a slide (clamped to the project's slides)
+            // Jump straight to a slide (clamped to the project's photos)
             function showSlide(target) {
-                const lastSlide = hasEndText ? totalImages : totalImages - 1;
-                if (target < 0 || target > lastSlide || target === image_index) return;
+                if (target < 0 || target >= totalImages || target === image_index) return;
                 image_index = target;
                 updateImage();
             }
@@ -823,7 +794,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showSlide(image_index - 1);
             }
 
-            // Show next image (or the end-text slide)
+            // Show next image
             function showNextImage() {
                 showSlide(image_index + 1);
             }
@@ -840,22 +811,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Update the featured display
                 const project = currentProjects[project_index];
-                // show the end-text slide instead of an image on the last slide
-                const onEndText = hasEndText && image_index === totalImages;
-                if (onEndText) {
-                    featuredImg.style.display = 'none';
-                    clearPreviewSize();
-                    endTextElem.classList.remove('hidden');
-                    endTextElem.textContent = project['end-text'];
-                } else {
-                    featuredImg.style.display = '';
-                    endTextElem.classList.add('hidden');
-                    const image = project.images[image_index];
-                    if (project) {
-                        console.log('Selected project:', project);
-                        /*featuredImg.alt = project['project-title'];*/
-                        imageDesc.textContent = image.description || '';
-                    }
+                const image = project.images[image_index];
+                if (project) {
+                    console.log('Selected project:', project);
+                    /*featuredImg.alt = project['project-title'];*/
+                    imageDesc.textContent = image.description || '';
                 }
                 // Store the position immediately so switching projects before
                 // the photo loads keeps the selection.
@@ -863,45 +823,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 clearTimeout(prefetchTimer);
                 cancelPendingFullPhoto();
 
-                // The counter and the peeks change with the visible slide. On a
-                // photo slide that is either the prefetched original or the
-                // cached thumbnail acting as an instant preview.
+                // The counter and the peeks change with the visible slide: either
+                // the prefetched original or the cached thumbnail acting as an
+                // instant preview.
                 const slideIndex = image_index;
                 const syncSlide = () => {
-                    updatePeeks(project, slideIndex, hasEndText, totalImages);
-                    imageCounter.textContent = `${slideIndex + 1} / ${totalSlides}`;
+                    updatePeeks(project, slideIndex, totalImages);
+                    imageCounter.textContent = `${slideIndex + 1} / ${totalImages}`;
                 };
-                if (onEndText) {
-                    // The text slide is laid out immediately: nothing to wait for.
-                    syncSlide();
-                } else {
-                    const image = project.images[slideIndex];
-                    const thumbUrl = `assets/thumbs/${image.image_path}`;
-                    const photoUrl = `assets/photos/${image.image_path}`;
+                const thumbUrl = `assets/thumbs/${image.image_path}`;
+                const photoUrl = `assets/photos/${image.image_path}`;
 
-                    const showingPreview = !prefetchedPhotos.has(photoUrl);
-                    if (!showingPreview) {
-                        // Ready at full quality: no preview frame at all.
-                        featuredImg.src = photoUrl;
-                    } else {
-                        // Show the small copy immediately, then upgrade it.
-                        featuredImg.src = thumbUrl;
-                        loadFullPhoto(photoUrl, imageSignal);
-                    }
-                    // The counter and the peeks follow the image that is
-                    // actually painted: the preview, or the original if ready.
-                    const revealSlide = () => {
-                        if (showingPreview) {
-                            sizePreviewToContainer();
-                        } else {
-                            clearPreviewSize();
-                        }
-                        syncSlide();
-                    };
-                    featuredImg.addEventListener('load', revealSlide, { once: true, signal: imageSignal });
-                    featuredImg.addEventListener('error', revealSlide, { once: true, signal: imageSignal });
-                    scheduleNeighbourPrefetch(project, slideIndex, hasEndText, totalImages);
+                const showingPreview = !prefetchedPhotos.has(photoUrl);
+                if (!showingPreview) {
+                    // Ready at full quality: no preview frame at all.
+                    featuredImg.src = photoUrl;
+                } else {
+                    // Show the small copy immediately, then upgrade it.
+                    featuredImg.src = thumbUrl;
+                    loadFullPhoto(photoUrl, imageSignal);
                 }
+                // The counter and the peeks follow the image that is
+                // actually painted: the preview, or the original if ready.
+                const revealSlide = () => {
+                    if (showingPreview) {
+                        sizePreviewToContainer();
+                    } else {
+                        clearPreviewSize();
+                    }
+                    syncSlide();
+                };
+                featuredImg.addEventListener('load', revealSlide, { once: true, signal: imageSignal });
+                featuredImg.addEventListener('error', revealSlide, { once: true, signal: imageSignal });
+                scheduleNeighbourPrefetch(project, slideIndex, totalImages);
 
                 function enterFullscreen() {
                     if (!document.fullscreenElement) {
