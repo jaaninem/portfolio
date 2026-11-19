@@ -87,7 +87,7 @@ Defined in `:root` in `assets/css/styles.css`; the mobile overrides sit in the `
 | `--gallery-mobile-font-scale` | `0.7` | Scale applied to gallery text on mobile |
 | `--gallery-container-width` | `25vw` | Width of the left panel |
 | `--gallery-container-mobile-height` | `25dvh` | Height of the gallery panel on mobile |
-| `--gallery-container-info-width` | `60vw` | Gallery width target while the info view is open |
+| `--gallery-container-info-width` | `clamp(360px, 45vw, 640px)` | Gallery width while the info view is open (desktop) |
 | `--gallery-container-info-mobile-height` | `100dvh` | Gallery height in the info view on mobile |
 | `--gallery-container-info-transition` | `width 0.5s ease-in-out` | Desktop info-view transition |
 | `--gallery-container-info-transition-mobile` | `height 0.5s ease-in-out` | Mobile info-view transition |

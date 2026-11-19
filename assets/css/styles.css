@@ -15,7 +15,7 @@
     --gallery-mobile-font-scale: 0.7; /* Scale factor for gallery-container text on mobile (1 = unchanged) */
     --gallery-container-width: 25vw; /* Width of the gallery container */
     --gallery-container-mobile-height: 25dvh; /* Height of the gallery container on mobile */
-    --gallery-container-info-width: 60vw; /* Width of the gallery container when the info view is open */
+    --gallery-container-info-width: clamp(360px, 45vw, 640px); /* Width of the gallery container when the info view is open */
     --gallery-container-info-mobile-height: 100dvh; /* Height of the gallery container when the info view is open on mobile */
     --gallery-container-info-transition: width 0.5s ease-in-out;
     --gallery-container-info-transition-mobile: height 0.5s ease-in-out;
@@ -658,11 +658,17 @@ body {
     }
     .info-content {
         font-size: calc(1.15rem * var(--gallery-mobile-font-scale));
-        padding: calc(56px + env(safe-area-inset-top)) 24px 32px;
+        padding: 30px 24px calc(48px + env(safe-area-inset-bottom));
     }
     .gallery-nav-btn,
     #back {
         font-size: calc(0.95rem * var(--gallery-mobile-font-scale));
+    }
+    /* Back takes the About button's place at the bottom-left of the phone panel */
+    #back {
+        top: auto;
+        left: calc(24px * var(--gallery-mobile-font-scale));
+        bottom: calc(18px * var(--gallery-mobile-font-scale) + env(safe-area-inset-bottom));
     }
     .counter {
         font-size: calc(1rem * var(--gallery-mobile-font-scale));
