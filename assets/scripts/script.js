@@ -676,9 +676,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // its marker does. Modifier combinations stay with the browser
             // (Ctrl/Cmd + '+' is zoom) and the wheel is invisible in fullscreen.
             if (e.key === '+' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !document.fullscreenElement) {
-                const row = projectGallery.children[project_index];
-                const marker = row && row.querySelector('.project-info-btn');
-                if (marker) openInfo('project', marker, currentProjects[project_index]);
+                // The shortcut acts on the selected project without focusing its
+                // marker: on close, focus returns to whatever was focused before.
+                const origin = document.activeElement;
+                const canRestore = origin
+                    && origin !== document.body
+                    && origin !== document.documentElement;
+                openInfo('project', canRestore ? origin : null, currentProjects[project_index]);
                 return;
             }
             if (e.key === 'ArrowUp') {

@@ -16,6 +16,7 @@ import shutil
 import socket
 import struct
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -48,6 +49,17 @@ def find_browser() -> str | None:
         if path:
             return path
     return None
+
+
+def skip_without_browser() -> None:
+    """Skip under pytest, or exit cleanly when run as a script."""
+    reason = "Chromium or Chrome is not installed"
+    if "pytest" in sys.modules:
+        import pytest
+
+        pytest.skip(reason)
+    print(f"SKIP: {reason}")
+    raise SystemExit(0)
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
