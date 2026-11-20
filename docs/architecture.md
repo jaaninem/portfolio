@@ -17,7 +17,8 @@ All behaviour is in `assets/scripts/script.js`. There is no framework, bundler o
 | `assets/css/styles.css` | Layout, typography, transitions, responsive rules |
 | `assets/scripts/script.js` | Data loading, rendering, navigation, peeks, info view |
 | `galleries/galleries.js` | `GALLERIES` list shown in the top bar |
-| `galleries/main.json` | Projects, captions and image paths |
+| `galleries/personnal.json` | Personal projects, captions and image paths |
+| `galleries/commercial.json` | Commercial projects, captions and image paths |
 | `assets/photos/` | Full-size photos, one folder per project |
 | `assets/photos/manifest.json` | Generated list of every available photo |
 | `assets/thumbs/` | Generated 300 px thumbnails mirroring `assets/photos/` |

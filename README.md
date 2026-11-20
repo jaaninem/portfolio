@@ -15,10 +15,10 @@ Then open http://localhost:8000/.
 ## Content
 
 - `galleries/galleries.js`: the list of galleries shown in the top bar.
-- `galleries/main.json`: projects, notes and image paths.
+- `galleries/personnal.json`, `galleries/commercial.json`: projects, notes and image paths.
 - `assets/photos/`: full-size photos, one folder per project.
 - `assets/thumbs/`: 300 px copies used by the neighbour peeks and the instant preview.
-- `assets/scripts/script.py`: refreshes `assets/photos/manifest.json` and can generate thumbnails.
+- `assets/scripts/script.py`: refreshes `assets/photos/manifest.json`, rebuilds stale thumbnails and can prune orphans.
 
 ## Project layout
 
@@ -43,15 +43,16 @@ docs/             project documentation
 
 ## Tests
 
-Browser checks in `tests/` cover the project list (one project per wheel gesture or swipe), the info view's focus handling and its split on phones, and the photo's vertical centring against the counter. They are driven by headless Chromium/Chrome through a stdlib-only DevTools harness (`tests/cdp.py`).
+Browser checks in `tests/` cover the project list (one project per wheel gesture or swipe), the info view's focus handling and its split on phones, and the photo's vertical centring against the counter. They are driven by headless Chromium/Chrome through a stdlib-only DevTools harness (`tests/cdp.py`). Unit tests cover the photo pipeline and check that the gallery JSON parses, that every image path resolves against the manifest, and that the manifest and thumbnails match the photo folder.
 
 ```bash
 python3 tests/test_project_scroll.py
 python3 tests/test_info_view.py
 python3 tests/test_photo_centering.py
+pytest tests/test_photo_pipeline.py tests/test_galleries.py
 ```
 
-The scripts serve the repository themselves and need no Python packages, only Chromium or Chrome. `pytest tests/` runs the same checks.
+The browser scripts serve the repository themselves and need no Python packages, only Chromium or Chrome. The pipeline tests need Pillow. `pytest tests/` runs everything.
 
 ## Status
 

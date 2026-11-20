@@ -152,20 +152,24 @@ def test_project_scroll() -> None:
         )
 
         # A stream of small events, as a trackpad flick and its momentum produce,
-        # is still one gesture and moves one project.
+        # is still one gesture and one step. A gallery with two projects only has
+        # room for a clamp check at the last row, so assert the reachable index.
+        deepest = min(2, rows - 1)
         session.wheel(GALLERY_X, GALLERY_Y, 20, count=10, gap_ms=10)
         session.wait(SETTLE_MS)
         stream = state(session)
-        assert stream["activeIndex"] == 2, (
+        assert stream["activeIndex"] == deepest, (
             f"a wheel stream should step exactly one project: {stream}"
         )
-        assert snapped_to(stream), f"the stream should end on row 2: {stream}"
+        assert snapped_to(stream), f"the stream should end on row {deepest}: {stream}"
 
         # Reversing the direction is a new gesture.
         session.wheel(GALLERY_X, GALLERY_Y, -100)
         session.wait(SETTLE_MS)
         back = state(session)
-        assert back["activeIndex"] == 1, f"wheel up should go back one project: {back}"
+        assert back["activeIndex"] == max(deepest - 1, 0), (
+            f"wheel up should go back one project: {back}"
+        )
 
         # The first project is a hard stop: no half row of overscroll.
         session.wheel(GALLERY_X, GALLERY_Y, -100)

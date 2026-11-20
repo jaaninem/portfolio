@@ -8,7 +8,8 @@ All configuration lives in files, there are no environment variables and no runt
 
 ```js
 const GALLERIES = [
-    { name: "Main", file: "galleries/main.json" }
+    { name: "Personnal", file: "galleries/personnal.json" },
+    { name: "Commercial", file: "galleries/commercial.json" }
 ];
 ```
 
@@ -16,11 +17,11 @@ const GALLERIES = [
 - `file` is a path relative to `index.html`.
 - The first entry loads at start. Clicking a name fetches that file and renders it in place, resetting the project and image selection.
 
-Only one gallery is currently configured.
+Two galleries are configured: Personnal, loaded first, and Commercial.
 
 ## Gallery JSON
 
-Each gallery file is an array of projects. `galleries/main.json` follows this shape:
+Each gallery file is an array of projects. `galleries/commercial.json` follows this shape:
 
 ```json
 [
@@ -61,19 +62,19 @@ The manifest is what makes globs and bare basenames work. If it fails to load, t
 
 `assets/photos/manifest.json` is a generated, sorted JSON array of relative POSIX paths such as `"Dunes/2425_S2_Agbayani_Janine_MiseEnScene_01.jpg"`. It is read at startup and never edited by hand.
 
-Regenerate it with:
+Regenerate the manifest and the thumbnails with:
 
 ```bash
 python3 assets/scripts/script.py
 ```
 
-The generator is documented in [modules/photo-pipeline.md](modules/photo-pipeline.md).
+Add `--clean` to delete thumbnails whose source photo is gone. The generator is documented in [modules/photo-pipeline.md](modules/photo-pipeline.md).
 
 ## Thumbnails
 
 `assets/thumbs/` mirrors `assets/photos/` and holds thumbnails capped at 300 px wide with the original aspect ratio. The neighbour peek strips load them, and so does the instant preview shown while an original downloads. The preview is upscaled to the photo's box, so it looks soft until the original arrives; a prefetched original skips the preview entirely. If a thumbnail is missing, the peek falls back to the full photo once.
 
-Thumbnails are produced by `assets/scripts/script.py` (`THUMB_WIDTH = 300`). Note that the generator's `generate_thumbnails()` call is commented out in the script's entry point, so a plain run only refreshes the manifest.
+Thumbnails are produced by `assets/scripts/script.py` (`THUMB_WIDTH = 300`). A plain run rebuilds every thumbnail whose source photo is newer than the thumbnail, so replacing a photo is enough to refresh it. `--force` rebuilds everything, `--clean` removes orphans.
 
 ## CSS variables
 
@@ -126,5 +127,5 @@ These are constants in `assets/scripts/script.js`, not user-facing settings:
 ## Runtime requirements
 
 - The site has to be served over HTTP; `fetch()` of the gallery JSON and the manifest fails when `index.html` is opened from disk.
-- The paths in `galleries.js`, the gallery JSON and `assets/scripts/script.py` are all relative to the repository root.
+- The paths in `galleries.js` and the gallery JSON are relative to the repository root. The photo pipeline anchors its own defaults to the repository root, so it can be run from any directory.
 - No build step or dependency installation is needed to view the site. The photo pipeline needs Python with Pillow.
