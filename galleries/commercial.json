@@ -1,0 +1,27 @@
+[
+	{
+		"project-title": "AXE-X",
+		"year": "2026",
+		"location": null,
+		"info": "AXE-X is a modular piece of furniture designed by Valentin Meghit as part of his Industrial Design diploma at ECAL.",
+		"images":
+		[
+			{
+				"image_path": "diplome_val_*.jpg"
+			}
+
+		]
+	},
+	{
+		"project-title": "LOBI",
+		"year": null,
+		"location": null,
+		"info": "LOBI is a kit to create different lamps with materials found at the construction store OBI designed by Léa Perrelet. This project is part of her Industrial Design diploma at ECAL.",
+		"images":
+		[
+			{
+				"image_path": "diplome_lea_*.jpg"
+			}
+		]
+	}
+]
