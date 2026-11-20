@@ -184,14 +184,14 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     padding: 0;
     border: none;
     background: none;
     color: #555;
     font-family: inherit;
-    font-size: 0.95rem; /* sets the badge scale: the ring is 1.3em wide */
+    font-size: 0.78rem; /* sets the badge scale: the ring is 1.3em wide */
     font-weight: normal; /* the active row is bold; keep the glyph as thin as the ring */
     line-height: 1;
     cursor: pointer;
@@ -697,7 +697,7 @@ body {
     }
     /* Smaller badge for the shorter, smaller title rows */
     .project-info-btn {
-        font-size: 0.85rem;
+        font-size: 0.72rem;
     }
 
     /* Center the titles on mobile and keep them clear of the year/location labels */
