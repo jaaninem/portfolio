@@ -101,6 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let infoMode = null;
         // the element that opened the info view, so focus can return to it
         let infoTrigger = null;
+        // true while the gallery panel animates its info split. Peek geometry
+        // and DOM work wait for the panel to settle instead of running on every
+        // frame of the transition.
+        let panelBusy = false;
+        let peekRevealPending = false;
+        let panelSettleTimer = 0;
 
         // Add project titles to gallery
         function renderProjects() {
@@ -191,7 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
         function onViewportResize() {
             if (infoMode) return; // wheel hidden: re-measured in closeInfo()
             projectHeight = readProjectHeight();
-            projectGallery.style.transition = 'none';
+            // The size change may cross a breakpoint: realign in one frame
+            // instead of sliding the list to its new position.
+            projectGallery.classList.add('snap');
             projectGallery.style.transform = `translateY(${-project_index * projectHeight}px)`;
         }
         window.addEventListener('resize', onViewportResize);
@@ -200,7 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Snap the list to a project. The list only ever rests on a project row:
         // there is no fractional position between two projects.
         function projectTransition(newIndex){
-            projectGallery.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+            // Let the transform transition again (a realign may have disabled it)
+            projectGallery.classList.remove('snap', 'is-switching');
             projectGallery.style.transform = `translateY(${-newIndex * projectHeight}px)`;
             if (newIndex !== project_index) {
                 project_index = newIndex;
@@ -547,9 +556,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // The panel changes size with the viewport and the draggable sidebar.
+        // While the info split is animating the peeks are hidden, so their
+        // geometry is refreshed once the panel settles (see finishPanelTransition).
         if (typeof ResizeObserver === 'function') {
             new ResizeObserver(() => {
                 if (previewSized) sizePreviewToContainer();
+                if (panelBusy || infoMode) return;
                 refreshPeeks();
             }).observe(mainDisplay);
         }
@@ -692,26 +704,52 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Switch to a different gallery file
+        // Switch to a different gallery file. The wheel fades out before its
+        // rows are replaced, so a cached fetch cannot flash, then fades back in
+        // once the new rows exist. A token ignores responses from an older click.
+        let gallerySwitchToken = 0;
+        let gallerySwitchTimer = 0;
+
         function switchGallery(file) {
+            const token = ++gallerySwitchToken;
+            clearTimeout(gallerySwitchTimer);
+            const started = performance.now();
+            projectGallery.classList.add('is-switching', 'hidden');
+
             fetch(file)
                 .then(response => {
                     if (!response.ok) throw new Error('Network response was not ok');
                     return response.json();
                 })
                 .then(data => {
+                    if (token !== gallerySwitchToken) return;
                     if (!data || !Array.isArray(data)) {
                         throw new Error('Invalid gallery data');
                     }
-                    currentProjects = data.map(project => ({ ...project, images: expandProjectImages(project, availableFiles) }));
-                    renderProjects();
-                    project_index = 0;
-                    projectGallery.style.transition = 'none';
-                    projectGallery.style.transform = 'translateY(0px)';
-                    updateProject();
+                    // Keep the fade visible for a beat so a fast fetch reads as
+                    // a transition instead of a flicker.
+                    const wait = Math.max(0, 120 - (performance.now() - started));
+                    gallerySwitchTimer = setTimeout(() => {
+                        if (token !== gallerySwitchToken) return;
+                        currentProjects = data.map(project => ({ ...project, images: expandProjectImages(project, availableFiles) }));
+                        renderProjects();
+                        project_index = 0;
+                        projectGallery.classList.add('snap');
+                        projectGallery.style.transform = 'translateY(0px)';
+                        updateProject();
+                        projectGallery.classList.remove('hidden');
+                        gallerySwitchTimer = setTimeout(() => {
+                            projectGallery.classList.remove('is-switching');
+                        }, 220);
+                    }, wait);
                 })
                 .catch(error => {
+                    if (token !== gallerySwitchToken) return;
                     console.error('Error loading gallery:', error);
+                    projectGallery.classList.remove('hidden');
+                    gallerySwitchTimer = setTimeout(() => {
+                        projectGallery.classList.remove('is-switching');
+                    }, 220);
                 });
         }
 
@@ -749,10 +787,46 @@ document.addEventListener('DOMContentLoaded', () => {
         const photoInfo = document.getElementById('photo-info');
 
         // Hidden while reading. The photo and its container stay visible.
-        const normalModeElements = [projectGallery, cursorLine, galleryNav, photoInfo, prevStrip, nextStrip];
+        // The wheel, nav, line and counter fade through CSS; the peek strips are
+        // revealed only after the panel has settled back to its normal size.
+        const normalModeElements = [projectGallery, cursorLine, galleryNav, photoInfo];
+        const peekStrips = [prevStrip, nextStrip];
 
         aboutBtn.addEventListener('click', () => openInfo('about', aboutBtn));
         backBtn.addEventListener('click', closeInfo);
+
+        // --- Panel transition --------------------------------------------
+        // Only the gallery panel animates its size; the photo panel follows
+        // through flex. Work that needs the final geometry waits for the
+        // transition to end instead of running on every frame.
+        const PANEL_SETTLE_FALLBACK = 600; // ms; a little over the 420 ms transition
+
+        function markPanelBusy() {
+            panelBusy = true;
+            galleryContainer.classList.add('panel-animating');
+            clearTimeout(panelSettleTimer);
+            panelSettleTimer = setTimeout(finishPanelTransition, PANEL_SETTLE_FALLBACK);
+        }
+
+        function finishPanelTransition() {
+            if (!panelBusy) return;
+            panelBusy = false;
+            clearTimeout(panelSettleTimer);
+            galleryContainer.classList.remove('panel-animating');
+            if (peekRevealPending && !infoMode) {
+                peekRevealPending = false;
+                // Position for the settled panel before the strips fade in.
+                refreshPeeks();
+                peekStrips.forEach(strip => strip.classList.remove('hidden'));
+            }
+        }
+
+        galleryContainer.addEventListener('transitionend', (event) => {
+            if (event.target !== galleryContainer) return;
+            if (event.propertyName === 'width' || event.propertyName === 'height') {
+                finishPanelTransition();
+            }
+        });
 
         function renderProjectInfo(project) {
             projectInfoTitle.textContent = project['project-title'] || '';
@@ -775,11 +849,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             infoMode = mode;
             infoTrigger = trigger || null;
+            // A close reveal may still be pending; opening cancels it.
+            peekRevealPending = false;
 
+            markPanelBusy();
             galleryContainer.classList.add('info-active');
             mainDisplay.classList.add('info-active');
             normalModeElements.forEach(elem => elem && elem.classList.add('hidden'));
+            peekStrips.forEach(strip => strip.classList.add('hidden'));
             backBtn.classList.remove('hidden');
+
+            // Faded controls must not take focus or be announced while reading.
+            projectGallery.inert = true;
+            galleryNav.inert = true;
 
             // Land keyboard and screen-reader users in the text
             const target = mode === 'project' ? projectInfo : aboutText;
@@ -791,12 +873,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!infoMode) return;
             infoMode = null;
 
+            markPanelBusy();
             galleryContainer.classList.remove('info-active');
             mainDisplay.classList.remove('info-active');
             normalModeElements.forEach(elem => elem && elem.classList.remove('hidden'));
             backBtn.classList.add('hidden');
             aboutText.classList.add('hidden');
             projectInfo.classList.add('hidden');
+            projectGallery.inert = false;
+            galleryNav.inert = false;
+
+            // The peeks keep their normal-size positions and stay hidden until
+            // the panel has shrunk, so they do not jump while it moves.
+            peekRevealPending = true;
 
             // The wheel was hidden while open, so re-measure it before use.
             onViewportResize();

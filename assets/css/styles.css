@@ -17,9 +17,18 @@
     --gallery-container-mobile-height: 25dvh; /* Height of the gallery container on mobile */
     --gallery-container-info-width: clamp(360px, 45vw, 640px); /* Width of the gallery container when the info view is open */
     --gallery-container-info-mobile-height: 60dvh; /* Height of the gallery container when the info view is open on mobile; the photo panel keeps the remaining 40dvh */
-    --gallery-container-info-transition: width 0.5s ease-in-out;
-    --gallery-container-info-transition-mobile: height 0.5s ease-in-out;
-    --gallery-elements-animation: fadeIn 0.5s ease;
+    /* Motion: one shared curve and a small set of durations. The panel starts
+       moving at once; the outgoing content is gone before the incoming content
+       fades in, and the decelerating curve means most of the resize happens
+       before that fade, so titles do not rewrap mid-fade. */
+    --motion-ease: cubic-bezier(0.2, 0, 0, 1); /* fast start, long settle */
+    --motion-panel-duration: 420ms;
+    --motion-out-duration: 120ms;
+    --motion-in-duration: 180ms;
+    --motion-in-delay: 160ms;
+    --motion-hover-duration: 160ms;
+    --gallery-container-info-transition: width var(--motion-panel-duration) var(--motion-ease);
+    --gallery-container-info-transition-mobile: height var(--motion-panel-duration) var(--motion-ease);
     --info-content-measure: 44ch; /* comfortable line length for About and project info */
     --peek-width: clamp(26px, 3.2vw, 46px); /* Neighbour peek thumbnail width */
     --peek-gap: 10px; /* Space between the featured photo and its peeks */
@@ -57,12 +66,66 @@ body {
     display: none;
 }
 
-/* The nav and the peek strips set their own display; keep .hidden winning
-   while the info view replaces them. */
+/* Info view: the wheel, nav, cursor line, counter, Back and peek strips fade out
+   instead of flipping display, so nothing cuts while the gallery panel resizes.
+   They are absolutely positioned or layout-neutral, so keeping their layout
+   while invisible is free, and it also keeps them measurable while hidden.
+   The transition declared here runs the fade out; the matching transition on
+   the visible rules runs the fade in. */
 #gallery-nav.hidden,
+#project-gallery.hidden,
 #prev-peeks.hidden,
 #next-peeks.hidden {
-    display: none;
+    display: flex;
+}
+
+#cursor-line.hidden,
+#photo-info.hidden,
+#back.hidden {
+    display: block;
+}
+
+#gallery-nav.hidden,
+#project-gallery.hidden,
+#cursor-line.hidden,
+#photo-info.hidden,
+#back.hidden,
+#prev-peeks.hidden,
+#next-peeks.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity var(--motion-out-duration) var(--motion-ease),
+                visibility 0s linear var(--motion-out-duration);
+}
+
+#prev-peeks.hidden .peek,
+#next-peeks.hidden .peek {
+    pointer-events: none;
+}
+
+/* Fade back in when the class is removed. Visibility changes at once so focus
+   can return to the wheel immediately; opacity waits until the panel is mostly
+   settled. #project-gallery declares its own transition because it also
+   animates the scroll transform. */
+#gallery-nav,
+#cursor-line,
+#photo-info,
+#back,
+#prev-peeks,
+#next-peeks {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--motion-in-duration) var(--motion-ease) var(--motion-in-delay),
+                visibility 0s linear 0s;
+}
+
+/* The peeks are revealed by JS once the panel has settled, so the reveal
+   itself must not add the info view's delay. */
+#prev-peeks,
+#next-peeks {
+    transition: opacity var(--motion-in-duration) var(--motion-ease),
+                visibility 0s linear 0s;
 }
 
 .container {
@@ -91,10 +154,16 @@ body {
     display: flex;
     align-items: center;
     resize: horizontal;
-    transition: var(--gallery-container-info-transition);
     touch-action: pan-x; /* Allow the gallery-name row to scroll horizontally; vertical handled by JS */
     -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
     overflow: hidden;
+}
+
+/* The panel only animates while the info view opens or closes (JS adds this
+   class for the duration). Keeping the transition off the resting state means
+   dragging the resize handle and live window resizes are not rubber-banded. */
+#gallery-container.panel-animating {
+    transition: var(--gallery-container-info-transition);
 }
 
 /*
@@ -135,6 +204,29 @@ body {
     flex-direction: column;
     align-items: center;
     will-change: transform; /* Keep the scroll animation on its own compositor layer */
+    opacity: 1;
+    visibility: visible;
+    /* the transform keeps its own 0.35 s slide; the info view only fades */
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity var(--motion-in-duration) var(--motion-ease) var(--motion-in-delay),
+                visibility 0s linear 0s;
+}
+
+/* Realigning the list (viewport change, gallery switch) has to jump in one
+   frame. Excluding transform from the transition does that without touching
+   the opacity transition the info view uses. The shorthand resets the
+   duration/delay lists, which are matched by index to the property list.
+   Scoped to the visible state so the hidden rule keeps its own fade out. */
+#project-gallery.snap:not(.hidden) {
+    transition: opacity var(--motion-in-duration) var(--motion-ease) var(--motion-in-delay),
+                visibility 0s linear 0s;
+}
+
+/* A gallery switch fades back in immediately instead of waiting for the info
+   view's 160 ms delay. */
+#project-gallery.is-switching:not(.hidden) {
+    transition: opacity var(--motion-in-duration) var(--motion-ease),
+                visibility 0s linear 0s;
 }
 
 .project-container {
@@ -144,7 +236,6 @@ body {
   justify-content: center; /* Center items horizontally */
   position: relative;
   width: 100%; /* Ensure full width */
-  animation: var(--gallery-elements-animation);
 }
 
 
@@ -155,7 +246,8 @@ body {
     /*font-weight: bold;*/
     font-size: var(--project-title-font-size);
     text-align: center;
-    transition: color 0.15s ease-out, opacity 0.15s ease-out, transform 0.15s ease-out; /* only compositor-friendly properties */
+    transition: color var(--motion-hover-duration) var(--motion-ease),
+                opacity var(--motion-hover-duration) var(--motion-ease); /* only compositor-friendly properties */
     opacity: 0.3;
     cursor: pointer;
     height: var(--project-title-height);
@@ -200,7 +292,8 @@ body {
     line-height: 1;
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.15s ease-out, color 0.15s ease-out;
+    transition: opacity var(--motion-hover-duration) var(--motion-ease),
+                color var(--motion-hover-duration) var(--motion-ease);
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -282,6 +375,15 @@ body {
 /* Info view: About and per-project information share one reading panel.
    The panel sits in the gallery column, which widens while it is open. */
 .info-content {
+    /* Both reading blocks share one box so they can crossfade. The box is
+       centred vertically on desktop, as the flex item used to be; a long note
+       caps at the panel height and scrolls from the top. Phones top-align it
+       (see the mobile block), matching the wheel. */
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
     width: 100%;
     max-width: var(--info-content-measure);
     max-height: 100%;
@@ -295,8 +397,23 @@ body {
     overflow-y: auto;
     overscroll-behavior: contain;
     touch-action: pan-y; /* the gallery panel is pan-x: text needs vertical scroll */
-    animation: fadeIn 0.35s ease;
     outline: none; /* focused programmatically when the info view opens */
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--motion-in-duration) var(--motion-ease) var(--motion-in-delay),
+                visibility 0s linear 0s;
+}
+
+/* Both reading blocks share the same box, so they can crossfade in place.
+   This override keeps .hidden as the state class (the tests read it) while
+   making the hide a fade rather than a display flip. */
+.info-content.hidden {
+    display: block;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity var(--motion-out-duration) var(--motion-ease),
+                visibility 0s linear var(--motion-out-duration);
 }
 
 #about-text a,
@@ -334,7 +451,6 @@ body {
     font-family: "SilkaMono", sans-serif; /*--var(--font-family), serif;*/
     letter-spacing: 1px;
     z-index: 100;
-    animation: var(--gallery-elements-animation);
     /*box-shadow: 0 10px 10px rgba(0,0,0,0.2); */
 }
 
@@ -352,7 +468,6 @@ body {
     gap: 18px;
     background: linear-gradient(to bottom, #f8f8f8 0%, #f8f8f8 75%, rgba(248, 248, 248, 0) 100%); /* fades into the titles below */
     z-index: 100;
-    animation: var(--gallery-elements-animation);
 }
 
 .gallery-nav-btn {
@@ -400,11 +515,11 @@ body {
 
 /* Main Display Area */
 #main-display {
-    /* fix right‐panel width so it never resizes with the image */
-    /*flex: 0 0 70%;        /* don’t grow or shrink, always 40% of container */
-    /*max-width: 800px;     /* optional cap */
-    width: calc(100vw - var(--gallery-container-width)); /* fill remaining space */
-    min-width: 30%;           /* always 60% of container */
+    /* The photo panel fills whatever the gallery leaves. Only the gallery
+       animates its dimension (see .panel-animating), so one layout driver
+       moves the split instead of two transitions that can drift apart. */
+    flex: 1 1 0;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -440,12 +555,12 @@ body {
     height: auto;
     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     border-radius: 1px;
-    animation: fadeIn 2s ease; /* Add fade-in animation */
+    animation: photoIn 0.4s var(--motion-ease); /* quick intro on first paint */
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes photoIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 #photo-info {
@@ -507,7 +622,8 @@ body {
     opacity: var(--peek-opacity);
     cursor: pointer;
     pointer-events: auto;
-    transition: opacity 0.18s ease-out, transform 0.18s ease-out;
+    transition: opacity var(--motion-hover-duration) var(--motion-ease),
+                transform var(--motion-hover-duration) var(--motion-ease);
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -606,14 +722,12 @@ body {
 
 #gallery-container.info-active {
     width: var(--gallery-container-info-width);
-    transition: var(--gallery-container-info-transition);
     resize: none; /* the wheel becomes a reading panel while open */
 }
 
-/* Keep the photo visible beside the widened panel */
+/* Keep the photo visible beside the widened panel. Its size follows the
+   gallery through flex, so only the gallery's width is animated. */
 #main-display.info-active {
-    width: calc(100vw - var(--gallery-container-info-width));
-    transition: var(--gallery-container-info-transition);
     /* The counter is hidden while reading, so the photo centres in the panel again. */
     --photo-index-band: 0px;
 }
@@ -624,10 +738,6 @@ body {
     display: none;
 }
 */
-
-#project-gallery.hidden {
-    display: none;
-}
 
 
 /* Mobile Layout */ 
@@ -658,6 +768,11 @@ body {
         resize: none;
     }
 
+    /* On a phone the split runs vertically, so the animated dimension is height */
+    #gallery-container.panel-animating {
+        transition: var(--gallery-container-info-transition-mobile);
+    }
+
     #gallery-nav {
         top: auto;
         bottom: 0;
@@ -686,6 +801,8 @@ body {
         font-size: calc(1rem * var(--gallery-mobile-font-scale));
     }
     .info-content {
+        top: 0;
+        transform: none;
         font-size: calc(1.15rem * var(--gallery-mobile-font-scale));
         padding: 30px 24px calc(48px + env(safe-area-inset-bottom));
     }
@@ -716,8 +833,9 @@ body {
     }
 
     #main-display {
+        flex: 1 1 0;
+        min-height: 0;
         width: 100%;
-        height: calc(100dvh - var(--gallery-container-mobile-height));
         padding: 20% 8%;
     }
 
@@ -751,15 +869,12 @@ body {
     #gallery-container.info-active {
         width: 100%;
         height: var(--gallery-container-info-mobile-height);
-        transition: var(--gallery-container-info-transition-mobile);
     }
 
     /* The photo panel keeps the space the reading panel does not take, so the
-       selected photo stays visible above the text. */
+       selected photo stays visible above the text. Flex follows the animated
+       gallery height, so the panel has no transition of its own. */
     #main-display.info-active {
-        width: 100%;
-        height: calc(100dvh - var(--gallery-container-info-mobile-height));
-        transition: var(--gallery-container-info-transition-mobile);
         padding: 0 0;
     }
 
@@ -767,4 +882,24 @@ body {
     #photo-info{
         display:none;
     }*/
+}
+
+/* Respect a reduced-motion preference: the same states, without the travel. */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --motion-panel-duration: 1ms;
+        --motion-out-duration: 1ms;
+        --motion-in-duration: 1ms;
+        --motion-in-delay: 0ms;
+        --motion-hover-duration: 1ms;
+    }
+
+    #project-gallery,
+    .project-title.active {
+        transition-duration: 1ms;
+    }
+
+    #featured-image {
+        animation-duration: 1ms;
+    }
 }

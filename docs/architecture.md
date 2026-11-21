@@ -44,7 +44,7 @@ Listeners that belong to a project or to a single image are attached through an 
 `body` is a centring flex container; `.container` fills the viewport and lays the two panels out in a row.
 
 - `#gallery-container` is `25vw` wide (`--gallery-container-width`), has a soft right shadow and `resize: horizontal`, so the divider can be dragged.
-- `#main-display` takes the remaining width, has a white background, `7% 5%` padding and hides overflow.
+- `#main-display` takes the remaining width through `flex: 1`, has a white background, `7% 5%` padding and hides overflow. Because it fills rather than setting its own width, animating the gallery width moves the whole split with a single layout driver.
 - `#image-container` is absolutely inset to match that padding and centres its content. It is raised by half the counter band (`--photo-index-band`) so the photo is centred between the panel top and the top of the counter, which is the lower edge of the photo index. `#featured-image` scales with `max-width` and `max-height` at 100%, keeping its own aspect ratio.
 - The counter sits at the bottom-right of the panel; the photo description sits under the image container. The neighbour peek strips share the photo's vertical centre.
 - The info view hides the counter, so `#main-display.info-active` sets `--photo-index-band` to `0px` and the photo centres in the whole panel.
@@ -129,13 +129,24 @@ Each side of the featured photo has a strip of faint thumbnails for the neighbou
 
 About and a project's information share one panel, so the two reading tasks behave the same.
 
-- `openInfo('about')` shows `#about-text`; `openInfo('project', trigger, project)` fills `#project-info` with the title, a `year · location` line and the `info` note. Each text block is a `.info-content` column of at most `44ch`.
-- The panel adds `info-active` to the gallery and photo panels, hides the wheel, the nav, the counter, the photo description and the peek strips, and shows the Back button. The photo itself stays visible at every viewport so the note keeps its context.
-- On desktop the gallery widens to `clamp(360px, 45vw, 640px)` (`--gallery-container-info-width`) and the photo panel takes the remaining width; both stay visible.
-- On mobile the gallery takes the bottom `60dvh` (`--gallery-container-info-mobile-height`) and the photo panel the remaining `40dvh` above it, so the selected photo stays visible while reading. Both panels animate with the height transition.
+- `openInfo('about')` shows `#about-text`; `openInfo('project', trigger, project)` fills `#project-info` with the title, a `year · location` line and the `info` note. Each text block is a `.info-content` column of at most `44ch`, absolutely positioned so the two blocks can crossfade in the same box.
+- The panel adds `info-active` to the gallery and photo panels, fades out the wheel, the nav, the counter, the photo description and the peek strips, and fades in the Back button. The photo itself stays visible at every viewport so the note keeps its context.
+- On desktop the gallery widens to `clamp(360px, 45vw, 640px)` (`--gallery-container-info-width`) and the photo panel fills the remaining width; both stay visible.
+- On mobile the gallery takes the bottom `60dvh` (`--gallery-container-info-mobile-height`) and the photo panel the remaining `40dvh` above it, so the selected photo stays visible while reading. Only the gallery dimension is animated; the photo panel follows through flex.
 - Back sits at the top-left of the desktop panel and at the bottom-left on mobile, in the About button's place. With `Escape` it closes the view. Focus moves into the text on open. On close it returns to the control that opened the view, or to the element focused before the `i` shortcut; the shortcut never moves focus to the project's `i` marker. The wheel is re-measured on close because it was hidden.
 - Pressing `i` opens the selected project's note without selecting its marker. Modifier combinations and fullscreen are left alone.
 - While the view is open, project and photo navigation inputs are ignored and the text scrolls natively (`overflow-y: auto`, `touch-action: pan-y`).
+
+### Info view motion
+
+The hide/show used to flip `display` on the first frame, which cut the content while the panel was still moving. It now fades through `opacity` and `visibility`:
+
+- The gallery panel is the only animated dimension, over `420ms` with `cubic-bezier(0.2, 0, 0, 1)` (`.panel-animating`, added by JS for the duration). The photo panel follows through flex.
+- The outgoing group (wheel, nav, line, counter, Back, reading text) fades out over `120ms`. The incoming group fades in over `180ms` after a `160ms` delay, when the decelerating resize is mostly done, so titles do not rewrap mid-fade.
+- `visibility` hides the groups once faded, which also removes them from the tab order. The wheel and nav are additionally `inert` while the view is open. `visibility` keeps them laid out and measurable, so the close path can re-measure the wheel before it fades back in.
+- The peek strips are revealed only after the panel settles: `transitionend` (or a `600ms` fallback) positions them for the final size, then fades them in.
+- Gallery switches fade the wheel out, replace the rows, then fade it back in; a minimum `120ms` keeps a cached fetch from flickering, and a request token ignores an older response.
+- `prefers-reduced-motion: reduce` reduces the durations to `1ms` and disables the list slide, keeping the same states.
 
 ## Photo data and thumbnails
 

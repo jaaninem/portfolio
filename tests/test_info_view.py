@@ -186,6 +186,123 @@ def note_line_count(session: BrowserSession, text: str) -> int:
     }})()""")
 
 
+def test_info_view_transition() -> None:
+    """The info view must morph instead of cutting the content on frame one.
+
+    Samples every animation frame during an open so the assertions describe the
+    choreography itself: the panel moves through intermediate sizes, the wheel
+    fades while still displayed (no display flip) and the text fades in rather
+    than appearing instantly.
+    """
+    if not find_browser():
+        skip_without_browser()
+
+    def sample_open(session: BrowserSession) -> list[dict[str, Any]]:
+        return session.js("""(async () => {
+            const gallery = document.getElementById('gallery-container');
+            const wheel = document.getElementById('project-gallery');
+            const content = document.getElementById('about-text');
+            const samples = [];
+            const start = performance.now();
+            document.getElementById('about').click();
+            await new Promise(resolve => {
+                function tick() {
+                    const wheelStyle = getComputedStyle(wheel);
+                    const contentStyle = getComputedStyle(content);
+                    const box = gallery.getBoundingClientRect();
+                    samples.push({
+                        t: performance.now() - start,
+                        width: box.width,
+                        height: box.height,
+                        wheelDisplay: wheelStyle.display,
+                        wheelVisibility: wheelStyle.visibility,
+                        wheelOpacity: Number(wheelStyle.opacity),
+                        contentVisibility: contentStyle.visibility,
+                        contentOpacity: Number(contentStyle.opacity),
+                    });
+                    if (performance.now() - start < 650) requestAnimationFrame(tick);
+                    else resolve();
+                }
+                requestAnimationFrame(tick);
+            });
+            return samples;
+        })()""")
+
+    # Desktop: the split animates horizontally.
+    with BrowserSession(ROOT, 1440, 900) as session:
+        session.wait(400)
+        start_width = session.js(
+            "document.getElementById('gallery-container').getBoundingClientRect().width"
+        )
+        samples = sample_open(session)
+        last = samples[-1]
+        assert last["width"] > start_width + 200, (
+            f"the gallery should widen in the info view: {last}"
+        )
+        assert any(start_width + 1 < s["width"] < last["width"] - 1 for s in samples), (
+            "the panel should move through intermediate widths, not jump"
+        )
+        assert any(
+            s["wheelDisplay"] == "flex"
+            and s["wheelVisibility"] == "visible"
+            and 0 < s["wheelOpacity"] < 0.9
+            for s in samples
+        ), "the wheel should fade out while still displayed, not cut on frame one"
+        assert all(s["wheelDisplay"] == "flex" for s in samples), (
+            "the wheel must never flip display during the transition"
+        )
+        assert any(0 < s["contentOpacity"] < 0.9 for s in samples), (
+            "the reading text should fade in"
+        )
+        assert last["wheelVisibility"] == "hidden", (
+            f"the wheel should be gone once the panel settles: {last}"
+        )
+        assert (
+            last["contentVisibility"] == "visible" and last["contentOpacity"] > 0.99
+        ), f"the reading text should settle visible: {last}"
+        assert not session.exceptions, f"the page raised errors: {session.exceptions}"
+
+    # Phone: the split animates vertically.
+    with BrowserSession(ROOT, PHONE_WIDTH, PHONE_HEIGHT) as session:
+        session.set_viewport(PHONE_WIDTH, PHONE_HEIGHT, mobile=True)
+        session.wait(400)
+        start_height = session.js(
+            "document.getElementById('gallery-container').getBoundingClientRect().height"
+        )
+        samples = sample_open(session)
+        last = samples[-1]
+        assert last["height"] > start_height + 100, (
+            f"the phone panel should grow in the info view: {last}"
+        )
+        assert any(
+            start_height + 1 < s["height"] < last["height"] - 1 for s in samples
+        ), "the phone panel should move through intermediate heights, not jump"
+        assert not session.exceptions, f"the page raised errors: {session.exceptions}"
+
+    # Reduced motion keeps the same states without the travel.
+    with BrowserSession(ROOT) as session:
+        session.call(
+            "Emulation.setEmulatedMedia",
+            {"features": [{"name": "prefers-reduced-motion", "value": "reduce"}]},
+        )
+        session.wait(400)
+        samples = sample_open(session)
+        early = next(s for s in samples if s["t"] > 100)
+        last = samples[-1]
+        assert abs(early["width"] - last["width"]) <= 2, (
+            f"reduced motion should finish the resize almost at once: {early} -> {last}"
+        )
+        assert early["wheelVisibility"] == "hidden", (
+            f"reduced motion should hide the wheel at once: {early}"
+        )
+        assert early["contentVisibility"] == "visible", (
+            f"reduced motion should show the text at once: {early}"
+        )
+        assert not session.exceptions, f"the page raised errors: {session.exceptions}"
+
+    print("all info view transition checks passed")
+
+
 def test_project_note_line_breaks() -> None:
     """A "\\n" in the gallery JSON must render as a line break, without indentation."""
     if not find_browser():
@@ -290,5 +407,6 @@ def test_info_view_focus() -> None:
 
 if __name__ == "__main__":
     test_info_view_focus()
+    test_info_view_transition()
     test_project_note_line_breaks()
     test_info_view_mobile_layout()
