@@ -42,7 +42,7 @@ Each gallery file is an array of projects. `galleries/commercial.json` follows t
 | `project-title` | string | yes | Title in the project list |
 | `year` | string or `null` | no | Small label next to the title |
 | `location` | string or `null` | no | Small label next to the title |
-| `info` | string | no | Note shown when the project's circled `i` marker opens its information view |
+| `info` | string | no | Note shown when the project's circled `i` marker opens its information view. `\n` starts a new line and `\n\n` a new paragraph |
 | `images` | array | yes | Slides of the project |
 | `images[].image_path` | string | yes | Path under `assets/photos/`, or a glob |
 | `images[].description` | string | no | Caption under the photo; no project uses it currently |
@@ -57,6 +57,8 @@ Each gallery file is an array of projects. `galleries/commercial.json` follows t
 - Anything else is kept as written, which normally results in a broken image.
 
 The manifest is what makes globs and bare basenames work. If it fails to load, the front end falls back to an empty list and only literal full paths resolve.
+
+Line breaks in a project's `info` are written as `\n` in the JSON, which the info view renders with `white-space: pre-line`: the newline is kept, the spaces around it collapse, and `\n\n` leaves a blank line. The About text is plain HTML in `index.html` and uses `<br>` for its line breaks.
 
 ## Photo manifest
 

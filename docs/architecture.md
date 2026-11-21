@@ -61,6 +61,7 @@ The sidebar width and the mobile panel height are CSS variables, documented in [
 ## Project list and scrolling
 
 - The project list is translated with `transform: translateY(...)`; it never uses native scrolling, so the selected title can be snapped to the cursor line.
+- The selection line is the fixed anchor. `#project-gallery` is positioned absolutely so the first row's centre sits on the line, and each translation of one row height keeps the next row on it. The alignment therefore does not depend on how many projects a gallery holds. On phones the list is anchored 10 px below the top of the panel and `#cursor-line` moves with it.
 - `readProjectHeight()` reads the used height of a rendered `.project-title` instead of the raw `var()`/`calc()` value, because custom properties do not resolve to pixels in `getComputedStyle`.
 - The list only rests on a project row: navigation always animates from one project to the next, with no fractional position in between.
 - The wheel and a touch swipe follow the same rule: one gesture changes exactly one project. Wheel deltas are accumulated to the same 30 px threshold as a swipe, and a gesture ends after 150 ms of quiet, so a trackpad flick and its momentum count as a single step. Horizontal-dominant gestures are left alone, so the gallery-name row keeps its native horizontal scroll. Movement is clamped at both ends, with no overscroll past the first or last project.

@@ -19,6 +19,7 @@ Or through pytest:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -172,6 +173,50 @@ def test_info_view_mobile_layout() -> None:
     print("all mobile info view layout checks passed")
 
 
+def note_line_count(session: BrowserSession, text: str) -> int:
+    """Render ``text`` in the project note and return its rendered line count."""
+    return session.js(f"""(() => {{
+        const note = document.getElementById('project-info-note');
+        const previous = note.textContent;
+        note.textContent = {json.dumps(text)};
+        const lineHeight = parseFloat(getComputedStyle(note).lineHeight);
+        const lines = Math.round(note.getBoundingClientRect().height / lineHeight);
+        note.textContent = previous;
+        return lines;
+    }})()""")
+
+
+def test_project_note_line_breaks() -> None:
+    """A "\\n" in the gallery JSON must render as a line break, without indentation."""
+    if not find_browser():
+        skip_without_browser()
+
+    with BrowserSession(ROOT) as session:
+        session.js("""document.querySelector('.project-title.active')
+            .querySelector('.project-info-btn').click()""")
+        session.wait(800)
+
+        white_space = session.js(
+            "getComputedStyle(document.getElementById('project-info-note')).whiteSpace"
+        )
+        assert white_space == "pre-line", (
+            f"the project note should honour authored newlines, got {white_space!r}"
+        )
+
+        assert note_line_count(session, "one two") == 1
+        assert note_line_count(session, "one\ntwo") == 2
+        assert note_line_count(session, "one\n    two") == 2, (
+            "the spaces around an authored newline should collapse"
+        )
+        assert note_line_count(session, "one\n\ntwo") == 3, (
+            "a blank line in the JSON should stay a blank line"
+        )
+
+        assert not session.exceptions, f"the page raised errors: {session.exceptions}"
+
+    print("all project note line break checks passed")
+
+
 def test_info_view_focus() -> None:
     if not find_browser():
         skip_without_browser()
@@ -245,4 +290,5 @@ def test_info_view_focus() -> None:
 
 if __name__ == "__main__":
     test_info_view_focus()
+    test_project_note_line_breaks()
     test_info_view_mobile_layout()
