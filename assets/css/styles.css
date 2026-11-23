@@ -24,8 +24,8 @@
     --motion-ease: cubic-bezier(0.2, 0, 0, 1); /* fast start, long settle */
     --motion-panel-duration: 420ms;
     --motion-out-duration: 120ms;
-    --motion-in-duration: 180ms;
-    --motion-in-delay: 160ms;
+    --motion-in-duration: 140ms;
+    --motion-in-delay: 260ms;
     --motion-hover-duration: 160ms;
     --gallery-container-info-transition: width var(--motion-panel-duration) var(--motion-ease);
     --gallery-container-info-transition-mobile: height var(--motion-panel-duration) var(--motion-ease);
@@ -157,6 +157,9 @@ body {
     touch-action: pan-x; /* Allow the gallery-name row to scroll horizontally; vertical handled by JS */
     -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on iOS */
     overflow: hidden;
+    /* Keep this panel's layout and paint isolated: its resizing should not
+       force the photo panel to recount or repaint more than necessary. */
+    contain: layout paint;
 }
 
 /* The panel only animates while the info view opens or closes (JS adds this
@@ -164,6 +167,23 @@ body {
    dragging the resize handle and live window resizes are not rubber-banded. */
 #gallery-container.panel-animating {
     transition: var(--gallery-container-info-transition);
+}
+
+/* While the split animates, promote the fading groups so iOS Safari composites
+   them instead of repainting each frame. The hints are removed when the panel
+   settles so no layers are kept around. */
+#gallery-container.panel-animating #project-gallery,
+#gallery-container.panel-animating #gallery-nav,
+#gallery-container.panel-animating #cursor-line,
+#gallery-container.panel-animating .info-content,
+#main-display.panel-animating #photo-info {
+    will-change: opacity;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+#gallery-container.panel-animating #project-gallery {
+    will-change: transform, opacity;
 }
 
 /*
@@ -203,13 +223,18 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    will-change: transform; /* Keep the scroll animation on its own compositor layer */
     opacity: 1;
     visibility: visible;
     /* the transform keeps its own 0.35 s slide; the info view only fades */
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
                 opacity var(--motion-in-duration) var(--motion-ease) var(--motion-in-delay),
                 visibility 0s linear 0s;
+}
+
+/* Only promote the list while it is actually sliding, so it is not kept as a
+   composited layer during the info transition. */
+#project-gallery.sliding {
+    will-change: transform;
 }
 
 /* Realigning the list (viewport change, gallery switch) has to jump in one
@@ -222,11 +247,10 @@ body {
                 visibility 0s linear 0s;
 }
 
-/* A gallery switch fades back in immediately instead of waiting for the info
-   view's 160 ms delay. */
-#project-gallery.is-switching:not(.hidden) {
-    transition: opacity var(--motion-in-duration) var(--motion-ease),
-                visibility 0s linear 0s;
+/* The gallery switch fades the wheel with an explicit animation (script.js),
+   so this class only blocks input while the rows are being replaced. */
+#project-gallery.is-switching {
+    pointer-events: none;
 }
 
 .project-container {
@@ -529,6 +553,8 @@ body {
     position: relative;
     overflow: hidden;
     touch-action: none; /* Let horizontal swipes on the image change photos */
+    /* Isolate the photo panel's layout and paint from the gallery column. */
+    contain: layout paint;
 }
 
 /* Fill the panel's content box with the featured photo, framed by a small equal top/bottom padding.
@@ -750,6 +776,13 @@ body {
         --peek-gap: 6px;
         --peek-spacing: 6px;
         --photo-index-band: calc(15px + 1.2rem * var(--gallery-mobile-font-scale) + env(safe-area-inset-bottom)); /* the counter is scaled on phones */
+        /* A phone has less headroom per frame, so the same choreography runs in
+           a shorter window: fade out 100 ms, resize 360 ms, fade in 120 ms from
+           200 ms, all of it done before the panel settles. */
+        --motion-panel-duration: 360ms;
+        --motion-out-duration: 100ms;
+        --motion-in-duration: 120ms;
+        --motion-in-delay: 200ms;
     }
 
     .container {

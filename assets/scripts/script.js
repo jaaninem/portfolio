@@ -199,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
             projectHeight = readProjectHeight();
             // The size change may cross a breakpoint: realign in one frame
             // instead of sliding the list to its new position.
+            projectGallery.classList.remove('sliding');
             projectGallery.classList.add('snap');
             projectGallery.style.transform = `translateY(${-project_index * projectHeight}px)`;
         }
@@ -209,7 +210,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // there is no fractional position between two projects.
         function projectTransition(newIndex){
             // Let the transform transition again (a realign may have disabled it)
-            projectGallery.classList.remove('snap', 'is-switching');
+            // and promote the list only for the duration of the slide.
+            projectGallery.classList.remove('snap');
+            projectGallery.classList.add('sliding');
             projectGallery.style.transform = `translateY(${-newIndex * projectHeight}px)`;
             if (newIndex !== project_index) {
                 project_index = newIndex;
@@ -217,6 +220,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateProject();
             }
         }
+
+        projectGallery.addEventListener('transitionend', (event) => {
+            if (event.target !== projectGallery) return;
+            if (event.propertyName === 'transform') projectGallery.classList.remove('sliding');
+        });
 
         // Horizontal swipe on the featured image (touch)
         // Bound once, so it always targets the current project via imageNav hooks.
@@ -556,14 +564,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // The panel changes size with the viewport and the draggable sidebar.
-        // While the info split is animating the peeks are hidden, so their
-        // geometry is refreshed once the panel settles (see finishPanelTransition).
+        // While the info split is animating the peeks are hidden and the panel
+        // is resizing, so the observer is disconnected for the transition and
+        // reattached once it settles (see finishPanelTransition).
+        let panelResizeObserver = null;
         if (typeof ResizeObserver === 'function') {
-            new ResizeObserver(() => {
+            panelResizeObserver = new ResizeObserver(() => {
                 if (previewSized) sizePreviewToContainer();
                 if (panelBusy || infoMode) return;
                 refreshPeeks();
-            }).observe(mainDisplay);
+            });
+            panelResizeObserver.observe(mainDisplay);
         }
 
         // Initialize the first project
@@ -704,53 +715,124 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Switch to a different gallery file. The wheel fades out before its
-        // rows are replaced, so a cached fetch cannot flash, then fades back in
-        // once the new rows exist. A token ignores responses from an older click.
+        // Switch to a different gallery file. The wheel stays visible and is
+        // faded with an explicit animation: iOS Safari skips opacity animations
+        // that start from a visibility-hidden element, and class-based timing
+        // could leave the list hidden. The rows are replaced while the wheel is
+        // transparent, then it fades back in. A token ignores responses from an
+        // older click, and the finally block always restores the resting state.
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const SWITCH_FADE_OUT = 140; // ms
+        const SWITCH_FADE_IN = 200;  // ms
+        const SWITCH_EASING = 'cubic-bezier(0.2, 0, 0, 1)';
         let gallerySwitchToken = 0;
-        let gallerySwitchTimer = 0;
+        let gallerySwitchAnimation = null;
 
-        function switchGallery(file) {
+        function cancelGallerySwitchFade() {
+            if (!gallerySwitchAnimation) return;
+            gallerySwitchAnimation.cancel();
+            gallerySwitchAnimation = null;
+        }
+
+        // A fade whose end can be awaited, or nothing at all under reduced motion.
+        function switchFade(from, to, duration, fill = 'none') {
+            if (reducedMotion.matches || typeof projectGallery.animate !== 'function') return null;
+            return projectGallery.animate(
+                [{ opacity: from }, { opacity: to }],
+                { duration, easing: SWITCH_EASING, fill }
+            );
+        }
+
+        async function fadeFinished(animation) {
+            if (!animation) return;
+            await animation.finished.catch(() => {});
+        }
+
+        // Warm the thumbnail before revealing the new gallery: the first slide
+        // otherwise decodes during the fade-in and drops frames on a phone.
+        function preloadThumbnail(path, timeout = 400) {
+            if (!path) return Promise.resolve();
+            return new Promise(resolve => {
+                const image = new Image();
+                let settled = false;
+                let timer = 0;
+                const done = () => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    resolve();
+                };
+                timer = setTimeout(done, timeout);
+                image.addEventListener('load', () => {
+                    const decoded = image.decode ? image.decode() : Promise.resolve();
+                    decoded.then(done, done);
+                }, { once: true });
+                image.addEventListener('error', done, { once: true });
+                image.src = `assets/thumbs/${path}`;
+            });
+        }
+
+        async function switchGallery(file) {
             const token = ++gallerySwitchToken;
-            clearTimeout(gallerySwitchTimer);
-            const started = performance.now();
-            projectGallery.classList.add('is-switching', 'hidden');
+            cancelGallerySwitchFade();
+            projectGallery.classList.add('is-switching');
 
-            fetch(file)
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    if (token !== gallerySwitchToken) return;
-                    if (!data || !Array.isArray(data)) {
-                        throw new Error('Invalid gallery data');
-                    }
-                    // Keep the fade visible for a beat so a fast fetch reads as
-                    // a transition instead of a flicker.
-                    const wait = Math.max(0, 120 - (performance.now() - started));
-                    gallerySwitchTimer = setTimeout(() => {
-                        if (token !== gallerySwitchToken) return;
-                        currentProjects = data.map(project => ({ ...project, images: expandProjectImages(project, availableFiles) }));
-                        renderProjects();
-                        project_index = 0;
-                        projectGallery.classList.add('snap');
-                        projectGallery.style.transform = 'translateY(0px)';
-                        updateProject();
-                        projectGallery.classList.remove('hidden');
-                        gallerySwitchTimer = setTimeout(() => {
-                            projectGallery.classList.remove('is-switching');
-                        }, 220);
-                    }, wait);
-                })
-                .catch(error => {
-                    if (token !== gallerySwitchToken) return;
-                    console.error('Error loading gallery:', error);
-                    projectGallery.classList.remove('hidden');
-                    gallerySwitchTimer = setTimeout(() => {
-                        projectGallery.classList.remove('is-switching');
-                    }, 220);
-                });
+            try {
+                // Load first, so a slow response never leaves the wheel blank.
+                const response = await fetch(file);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                if (token !== gallerySwitchToken) return;
+                if (!data || !Array.isArray(data)) throw new Error('Invalid gallery data');
+
+                const projects = data.map(project => ({
+                    ...project,
+                    images: expandProjectImages(project, availableFiles)
+                }));
+
+                // Start from what is on screen, so a second tap mid-fade does not jump.
+                const currentOpacity = Number.parseFloat(getComputedStyle(projectGallery).opacity);
+                const from = Number.isFinite(currentOpacity) ? currentOpacity : 1;
+                const fade = switchFade(from, 0, SWITCH_FADE_OUT, 'forwards');
+                gallerySwitchAnimation = fade;
+                // The thumbnail is warmed while the wheel fades, so the first
+                // slide does not decode during the reveal.
+                await Promise.all([
+                    fadeFinished(fade),
+                    preloadThumbnail(projects[0]?.images?.[0]?.image_path)
+                ]);
+                if (token !== gallerySwitchToken) return;
+
+                currentProjects = projects;
+                renderProjects();
+                project_index = 0;
+                projectGallery.classList.remove('sliding');
+                projectGallery.classList.add('snap');
+                projectGallery.style.transform = 'translateY(0px)';
+                updateProject();
+
+                // Let the browser paint the new rows before they are revealed.
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                if (token !== gallerySwitchToken) return;
+
+                if (fade) fade.cancel();
+                const fadeIn = switchFade(0, 1, SWITCH_FADE_IN);
+                gallerySwitchAnimation = fadeIn;
+                await fadeFinished(fadeIn);
+                if (token !== gallerySwitchToken) return;
+                if (fadeIn) fadeIn.cancel();
+                gallerySwitchAnimation = null;
+            } catch (error) {
+                if (token !== gallerySwitchToken) return;
+                console.error('Error loading gallery:', error);
+            } finally {
+                // Only the current switch may restore the wheel; an older one
+                // must not cancel the fade a newer switch has started.
+                if (token === gallerySwitchToken) {
+                    cancelGallerySwitchFade();
+                    projectGallery.classList.remove('is-switching');
+                }
+            }
         }
 
         // Build the gallery-name buttons at the top of the gallery panel
@@ -803,7 +885,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function markPanelBusy() {
             panelBusy = true;
+            // Reflow happens every frame while the split moves; drop the observer
+            // entirely rather than waking it up only to return early.
+            if (panelResizeObserver) panelResizeObserver.disconnect();
             galleryContainer.classList.add('panel-animating');
+            mainDisplay.classList.add('panel-animating');
             clearTimeout(panelSettleTimer);
             panelSettleTimer = setTimeout(finishPanelTransition, PANEL_SETTLE_FALLBACK);
         }
@@ -813,12 +899,15 @@ document.addEventListener('DOMContentLoaded', () => {
             panelBusy = false;
             clearTimeout(panelSettleTimer);
             galleryContainer.classList.remove('panel-animating');
+            mainDisplay.classList.remove('panel-animating');
+            if (previewSized) sizePreviewToContainer();
             if (peekRevealPending && !infoMode) {
                 peekRevealPending = false;
                 // Position for the settled panel before the strips fade in.
                 refreshPeeks();
                 peekStrips.forEach(strip => strip.classList.remove('hidden'));
             }
+            if (panelResizeObserver) panelResizeObserver.observe(mainDisplay);
         }
 
         galleryContainer.addEventListener('transitionend', (event) => {

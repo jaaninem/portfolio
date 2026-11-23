@@ -1,9 +1,10 @@
-"""Behaviour checks for the project list, its navigation inputs and the peeks.
+"""Behaviour checks for the project list, its navigation inputs, the peeks and
+gallery switching.
 
 Covers the unified one-project-per-gesture rule (wheel and touch), the clamps at
 either end, the photo-panel wheel, the info view, keyboard arrows, realignment
-after viewport changes, and the neighbour peeks sharing one capacity rule at
-every viewport.
+after viewport changes, the neighbour peeks sharing one capacity rule at every
+viewport, and the opacity-only gallery switch staying visible and interactive.
 
 Run directly, with no Python packages installed:
 
@@ -19,6 +20,7 @@ repository itself.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -445,6 +447,170 @@ def test_neighbour_peeks() -> None:
     print("all neighbour peek checks passed")
 
 
+def gallery_switch_state(session: BrowserSession) -> dict[str, Any]:
+    """Project wheel and gallery-button state after a switch."""
+    return session.js("""(() => {
+        const wheel = document.getElementById('project-gallery');
+        const style = getComputedStyle(wheel);
+        const activeButton = [...document.querySelectorAll('.gallery-btn')]
+            .find(button => button.classList.contains('active'));
+        const activeTitle = document.querySelector('.project-title.active .project-title-text');
+        return {
+            opacity: Number(style.opacity),
+            visibility: style.visibility,
+            pointerEvents: style.pointerEvents,
+            switching: wheel.classList.contains('is-switching'),
+            rows: document.querySelectorAll('.project-title').length,
+            active: activeTitle ? activeTitle.textContent.trim() : null,
+            button: activeButton ? activeButton.textContent : null,
+            animations: wheel.getAnimations().length,
+        };
+    })()""")
+
+
+def first_project_title(file: str) -> str:
+    """Title of the first project in a gallery file."""
+    return json.loads((ROOT / file).read_text(encoding="utf-8"))[0]["project-title"]
+
+
+def test_gallery_switch() -> None:
+    """The wheel switch must fade in place, never blank out, and always settle.
+
+    iOS Safari skips opacity animations that start from a visibility-hidden
+    element, and the old class-based switch could leave the rebuilt rows
+    invisible. The sampler checks that the wheel stays visible for the whole
+    switch and fades through intermediate opacities, then that the settled
+    wheel is interactive.
+    """
+    if not find_browser():
+        skip_without_browser()
+
+    commercial_title = first_project_title("galleries/commercial.json")
+    personal_title = first_project_title("galleries/personnal.json")
+
+    with BrowserSession(ROOT) as session:
+        start = gallery_switch_state(session)
+        assert start["button"] == "Personnal", (
+            f"the first gallery should be active: {start}"
+        )
+        assert start["active"] == personal_title, (
+            f"the first gallery should start on its first project: {start}"
+        )
+
+        samples = session.js("""(async () => {
+            const wheel = document.getElementById('project-gallery');
+            const samples = [];
+            const start = performance.now();
+            document.querySelectorAll('.gallery-btn')[1].click();
+            await new Promise(resolve => {
+                function tick() {
+                    const style = getComputedStyle(wheel);
+                    samples.push({
+                        t: performance.now() - start,
+                        opacity: Number(style.opacity),
+                        visibility: style.visibility,
+                    });
+                    if (performance.now() - start < 800) requestAnimationFrame(tick);
+                    else resolve();
+                }
+                requestAnimationFrame(tick);
+            });
+            return samples;
+        })()""")
+
+        assert samples, "the switch should produce animation frames"
+        assert all(sample["visibility"] == "visible" for sample in samples), (
+            "the wheel must stay visible for the whole switch, never hidden"
+        )
+        assert any(0 < sample["opacity"] < 0.9 for sample in samples), (
+            "the wheel should fade through intermediate opacities, not jump"
+        )
+        assert samples[-1]["opacity"] > 0.99, (
+            f"the wheel should be fully visible when the switch ends: {samples[-1]}"
+        )
+
+        switched = gallery_switch_state(session)
+        assert switched["button"] == "Commercial", (
+            f"the commercial gallery should be active: {switched}"
+        )
+        assert switched["rows"] > 0, (
+            f"the switched gallery should render rows: {switched}"
+        )
+        assert switched["active"] == commercial_title, (
+            f"the switched gallery should show its first project: {switched}"
+        )
+        assert switched["visibility"] == "visible" and switched["opacity"] > 0.99, (
+            f"the wheel should be fully visible after the switch: {switched}"
+        )
+        assert not switched["switching"] and switched["pointerEvents"] == "auto", (
+            f"the wheel should accept input after the switch: {switched}"
+        )
+
+        # The new rows are real controls, not just paint.
+        session.js("document.querySelectorAll('.project-title')[1].click()")
+        session.wait(SETTLE_MS)
+        clicked = gallery_switch_state(session)
+        assert clicked["active"] != commercial_title, (
+            f"a title in the switched gallery should be clickable: {clicked}"
+        )
+
+        # Two quick taps settle on the last gallery, not a mixture.
+        session.js("""(() => {
+            const buttons = document.querySelectorAll('.gallery-btn');
+            buttons[0].click();
+            buttons[1].click();
+        })()""")
+        session.wait(900)
+        rapid = gallery_switch_state(session)
+        assert rapid["button"] == "Commercial", (
+            f"the last tapped gallery should win: {rapid}"
+        )
+        assert rapid["active"] == commercial_title, (
+            f"the last gallery's rows should be shown: {rapid}"
+        )
+        assert rapid["opacity"] > 0.99 and rapid["visibility"] == "visible", (
+            f"rapid taps must still settle the wheel visible: {rapid}"
+        )
+
+        # Switching after reading a note leaves the wheel usable too.
+        session.js("document.getElementById('about').click()")
+        session.wait(600)
+        session.js(
+            "document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))"
+        )
+        session.wait(600)
+        session.js("document.querySelectorAll('.gallery-btn')[0].click()")
+        session.wait(900)
+        after_info = gallery_switch_state(session)
+        assert after_info["button"] == "Personnal", (
+            f"the personal gallery should be active again: {after_info}"
+        )
+        assert after_info["active"] == personal_title, (
+            f"the personal gallery should show its first project: {after_info}"
+        )
+        assert after_info["opacity"] > 0.99 and after_info["visibility"] == "visible", (
+            f"the wheel should be usable after the info view: {after_info}"
+        )
+
+        # The same switch on the phone layout.
+        session.set_viewport(390, 844, mobile=True)
+        session.wait(500)
+        session.js("document.querySelectorAll('.gallery-btn')[1].click()")
+        session.wait(900)
+        phone = gallery_switch_state(session)
+        assert phone["visibility"] == "visible" and phone["opacity"] > 0.99, (
+            f"the phone switch should leave the wheel visible: {phone}"
+        )
+        assert phone["active"] == commercial_title, (
+            f"the phone switch should show the new gallery: {phone}"
+        )
+
+        assert not session.exceptions, f"the page raised errors: {session.exceptions}"
+
+    print("all gallery switch checks passed")
+
+
 if __name__ == "__main__":
     test_project_scroll()
     test_neighbour_peeks()
+    test_gallery_switch()

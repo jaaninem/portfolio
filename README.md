@@ -43,7 +43,7 @@ docs/             project documentation
 
 ## Tests
 
-Browser checks in `tests/` cover the project list (one project per wheel gesture or swipe), the info view's focus handling and its split on phones, and the photo's vertical centring against the counter. They are driven by headless Chromium/Chrome through a stdlib-only DevTools harness (`tests/cdp.py`). Unit tests cover the photo pipeline and check that the gallery JSON parses, that every image path resolves against the manifest, and that the manifest and thumbnails match the photo folder.
+Browser checks in `tests/` cover the project list (one project per wheel gesture or swipe), gallery switching, the info view's focus handling and its split on phones, and the photo's vertical centring against the counter. They are driven by headless Chromium/Chrome through a stdlib-only DevTools harness (`tests/cdp.py`). Unit tests cover the photo pipeline and check that the gallery JSON parses, that every image path resolves against the manifest, and that the manifest and thumbnails match the photo folder.
 
 ```bash
 python3 tests/test_project_scroll.py

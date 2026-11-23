@@ -93,12 +93,12 @@ Defined in `:root` in `assets/css/styles.css`; the mobile overrides sit in the `
 | `--gallery-container-info-width` | `clamp(360px, 45vw, 640px)` | Gallery width while the info view is open (desktop) |
 | `--gallery-container-info-mobile-height` | `60dvh` | Gallery height in the info view on mobile; the photo panel takes the remaining `40dvh` |
 | `--gallery-container-info-transition` | `width 420ms cubic-bezier(0.2, 0, 0, 1)` | Desktop info-view transition; applied only while `.panel-animating` is set |
-| `--gallery-container-info-transition-mobile` | `height 420ms cubic-bezier(0.2, 0, 0, 1)` | Mobile info-view transition; applied only while `.panel-animating` is set |
+| `--gallery-container-info-transition-mobile` | `height var(--motion-panel-duration) cubic-bezier(0.2, 0, 0, 1)` | Mobile info-view transition; applied only while `.panel-animating` is set. Uses the phone panel duration (`360ms`) |
 | `--motion-ease` | `cubic-bezier(0.2, 0, 0, 1)` | Shared motion curve (fast start, long settle) |
-| `--motion-panel-duration` | `420ms` | Gallery panel resize when the info view opens or closes |
-| `--motion-out-duration` | `120ms` | Fade out of the content the info view replaces |
-| `--motion-in-duration` | `180ms` | Fade in of the content the info view shows |
-| `--motion-in-delay` | `160ms` | Wait before that fade in, so most of the resize is already done |
+| `--motion-panel-duration` | `420ms` (`360ms` on phones) | Gallery panel resize when the info view opens or closes |
+| `--motion-out-duration` | `120ms` (`100ms` on phones) | Fade out of the content the info view replaces |
+| `--motion-in-duration` | `140ms` (`120ms` on phones) | Fade in of the content the info view shows |
+| `--motion-in-delay` | `260ms` (`200ms` on phones) | Wait before that fade in, so most of the resize is already done |
 | `--motion-hover-duration` | `160ms` | Hover and marker transitions |
 | `--info-content-measure` | `44ch` | Line length of the About and project info text |
 | `--peek-width` | `clamp(26px, 3.2vw, 46px)` | Neighbour peek width; mobile: `clamp(20px, 6.5vw, 28px)` |
@@ -122,7 +122,9 @@ These are constants in `assets/scripts/script.js`, not user-facing settings:
 | `WHEEL_LINE_HEIGHT` | `16` px | Pixels per line when a browser reports wheel deltas in lines |
 | Project list transition | `transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)` in `styles.css` | Title list slide |
 | `PANEL_SETTLE_FALLBACK` | `600` ms | Fallback for the `transitionend` that refreshes and reveals the peeks |
-| Gallery switch fade | `120` ms out, `180` ms in | Wheel fade while another gallery file loads |
+| `SWITCH_FADE_OUT` | `140` ms | Gallery-switch fade out (Web Animations API) |
+| `SWITCH_FADE_IN` | `200` ms | Gallery-switch fade in |
+| `preloadThumbnail` timeout | `400` ms | Maximum wait for the new gallery's first thumbnail before revealing the rows |
 | Image wheel threshold | `100` px | Accumulated wheel distance before a slide change |
 | Image swipe threshold | `50` px | Horizontal swipe distance on the photo |
 | Project swipe threshold | `30` px | Vertical swipe distance on the gallery panel |

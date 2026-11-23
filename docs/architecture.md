@@ -139,14 +139,16 @@ About and a project's information share one panel, so the two reading tasks beha
 
 ### Info view motion
 
-The hide/show used to flip `display` on the first frame, which cut the content while the panel was still moving. It now fades through `opacity` and `visibility`:
+The hide/show used to flip `display` on the first frame, which cut the content while the panel was still moving. The info view now fades through `opacity` and `visibility`:
 
-- The gallery panel is the only animated dimension, over `420ms` with `cubic-bezier(0.2, 0, 0, 1)` (`.panel-animating`, added by JS for the duration). The photo panel follows through flex.
-- The outgoing group (wheel, nav, line, counter, Back, reading text) fades out over `120ms`. The incoming group fades in over `180ms` after a `160ms` delay, when the decelerating resize is mostly done, so titles do not rewrap mid-fade.
+- The gallery panel is the only animated dimension, over `420ms` (`360ms` on phones) with `cubic-bezier(0.2, 0, 0, 1)` (`.panel-animating`, added by JS for the duration). The photo panel follows through flex.
+- The outgoing group (wheel, nav, line, counter, Back, reading text) fades out over `120ms` (`100ms` on phones). The incoming group fades in over `140ms` (`120ms`) after a `260ms` (`200ms`) delay, when the decelerating resize is mostly done, so titles do not rewrap mid-fade.
 - `visibility` hides the groups once faded, which also removes them from the tab order. The wheel and nav are additionally `inert` while the view is open. `visibility` keeps them laid out and measurable, so the close path can re-measure the wheel before it fades back in.
+- While `.panel-animating` is set, the fading groups get `will-change: opacity` (and `backface-visibility: hidden`) so Safari composites them instead of repainting each frame. The hint is removed when the panel settles. The list's `will-change: transform` is applied only during a project slide (`.sliding`).
+- The `ResizeObserver` is disconnected for the duration of the panel transition and reattached once it settles, so it does not run on every resize frame. Both panels use `contain: layout paint` to keep their layout and paint isolated.
 - The peek strips are revealed only after the panel settles: `transitionend` (or a `600ms` fallback) positions them for the final size, then fades them in.
-- Gallery switches fade the wheel out, replace the rows, then fade it back in; a minimum `120ms` keeps a cached fetch from flickering, and a request token ignores an older response.
-- `prefers-reduced-motion: reduce` reduces the durations to `1ms` and disables the list slide, keeping the same states.
+- Gallery switches are different: the wheel stays visible and is faded with an explicit Web Animations API opacity animation, because iOS Safari skips opacity animations that start from a `visibility: hidden` element. The fetch and the first thumbnail decode happen before or during the fade-out, the rows are replaced at opacity 0, and a finalization step always restores the wheel to opacity 1 and interactive. A request token cancels an older switch and its fade.
+- `prefers-reduced-motion: reduce` reduces the durations (including the switch animation) to `1ms` and disables the list slide, keeping the same states.
 
 ## Photo data and thumbnails
 
