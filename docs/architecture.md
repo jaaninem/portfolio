@@ -118,12 +118,14 @@ Each side of the featured photo has a strip of faint thumbnails for the neighbou
 | `ArrowUp` / `ArrowDown` | Page | Previous or next project |
 | `ArrowLeft` / `ArrowRight` | Page | Previous or next slide |
 | Peek click | Photo panel edges | Jump to the clicked slide |
-| Gallery name click | Top bar | Load another gallery file |
+| Gallery name tap/click | Top bar | Load another gallery file |
 | Project title click | Gallery panel | Select that project |
 | `i` marker click | Gallery panel | Select that project and open its information |
 | `i` key | Page | Open the selected project's information |
 | Double-click, `f` | Photo panel | Toggle fullscreen |
 | `Escape` | Page | Leave fullscreen, or close the info view |
+
+Gallery names are activated on `touchend` as well as on `click`. iOS Safari can suppress the first click after a swipe, so a tap that moves less than 8 px selects the gallery directly from the touch event. A click on the already-active gallery is a no-op, so it cannot reinitialize the gallery that is already on screen. Project swipes ignore gestures that start in the nav, so a gallery-name tap cannot also move the project list.
 
 ## Info view
 

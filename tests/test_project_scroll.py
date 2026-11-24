@@ -463,14 +463,20 @@ def gallery_switch_state(session: BrowserSession) -> dict[str, Any]:
             rows: document.querySelectorAll('.project-title').length,
             active: activeTitle ? activeTitle.textContent.trim() : null,
             button: activeButton ? activeButton.textContent : null,
+            counter: document.getElementById('image-counter').textContent,
             animations: wheel.getAnimations().length,
         };
     })()""")
 
 
+def project_title(file: str, index: int) -> str:
+    """Title of one project in a gallery file."""
+    return json.loads((ROOT / file).read_text(encoding="utf-8"))[index]["project-title"]
+
+
 def first_project_title(file: str) -> str:
     """Title of the first project in a gallery file."""
-    return json.loads((ROOT / file).read_text(encoding="utf-8"))[0]["project-title"]
+    return project_title(file, 0)
 
 
 def test_gallery_switch() -> None:
@@ -603,6 +609,86 @@ def test_gallery_switch() -> None:
         )
         assert phone["active"] == commercial_title, (
             f"the phone switch should show the new gallery: {phone}"
+        )
+
+        # iOS can drop the first click after a swipe. A synthetic touch tap emits
+        # no click at all, so the switch must come from the touchend handler.
+        session.js("""(() => {
+            const button = document.querySelectorAll('.gallery-btn')[0];
+            const rect = button.getBoundingClientRect();
+            const touch = new Touch({
+                identifier: 1,
+                target: button,
+                clientX: rect.left + rect.width / 2,
+                clientY: rect.top + rect.height / 2,
+            });
+            const fire = (type, touches, targetTouches, changedTouches) =>
+                button.dispatchEvent(new TouchEvent(type, {
+                    bubbles: true,
+                    cancelable: true,
+                    touches,
+                    targetTouches,
+                    changedTouches,
+                }));
+            fire('touchstart', [touch], [touch], [touch]);
+            fire('touchend', [], [], [touch]);
+            return true;
+        })()""")
+        session.wait(900)
+        touched = gallery_switch_state(session)
+        assert touched["button"] == "Personnal", (
+            f"a touch tap without a click should switch galleries: {touched}"
+        )
+        assert touched["active"] == personal_title, (
+            f"the touched gallery should show its first project: {touched}"
+        )
+        assert touched["visibility"] == "visible" and touched["opacity"] > 0.99, (
+            f"the touched gallery should be visible: {touched}"
+        )
+
+        # The reported path: swipe to the second project, swipe several photos,
+        # then tap the other gallery name. iOS can drop the first click after
+        # that gesture, and the old project swipe must not fire during the tap.
+        session.touch_swipe(195, 720, 0, -80)
+        session.wait(SETTLE_MS)
+        swiped = gallery_switch_state(session)
+        assert swiped["active"] == project_title("galleries/personnal.json", 1), (
+            f"the project swipe should select the second project: {swiped}"
+        )
+        for _ in range(2):
+            session.touch_swipe(195, 250, -80, 0)
+            session.wait(300)
+        commercial_centre = session.js("""(() => {
+            const button = document.querySelectorAll('.gallery-btn')[1];
+            const rect = button.getBoundingClientRect();
+            return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        })()""")
+        session.touch_tap(commercial_centre["x"], commercial_centre["y"])
+        session.wait(900)
+        tapped = gallery_switch_state(session)
+        assert tapped["button"] == "Commercial", (
+            f"a tap after photo swipes should switch galleries: {tapped}"
+        )
+        assert tapped["active"] == commercial_title, (
+            f"the tapped gallery should show its first project: {tapped}"
+        )
+        assert tapped["visibility"] == "visible" and tapped["opacity"] > 0.99, (
+            f"the tapped gallery should be visible: {tapped}"
+        )
+
+        # Tapping the already-active gallery must not reinitialize its slide.
+        session.key("ArrowRight", "ArrowRight", 39)
+        session.wait(400)
+        before_active_tap = gallery_switch_state(session)
+        session.js("document.querySelectorAll('.gallery-btn')[1].click()")
+        session.wait(500)
+        after_active_tap = gallery_switch_state(session)
+        assert after_active_tap["counter"] == before_active_tap["counter"], (
+            "tapping the active gallery must not reset the current photo"
+            f" ({before_active_tap['counter']} -> {after_active_tap['counter']})"
+        )
+        assert after_active_tap["active"] == before_active_tap["active"], (
+            "tapping the active gallery must not reset the current project"
         )
 
         assert not session.exceptions, f"the page raised errors: {session.exceptions}"

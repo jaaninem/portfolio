@@ -408,6 +408,19 @@ class BrowserSession:
         self.wait(50)  # let the page handle touchend before emulation is switched off
         self.call("Emulation.setTouchEmulationEnabled", {"enabled": False})
 
+    def touch_tap(self, x: float, y: float) -> None:
+        """Tap once with one finger at a page coordinate."""
+        self.call(
+            "Emulation.setTouchEmulationEnabled", {"enabled": True, "maxTouchPoints": 1}
+        )
+        self.call(
+            "Input.dispatchTouchEvent",
+            {"type": "touchStart", "touchPoints": [{"x": x, "y": y, "id": 1}]},
+        )
+        self.call("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+        self.wait(50)  # let the page handle touchend before emulation is switched off
+        self.call("Emulation.setTouchEmulationEnabled", {"enabled": False})
+
     def key(self, name: str, code: str, virtual_key_code: int) -> None:
         """Press and release a key."""
         for event_type in ("rawKeyDown", "keyUp"):

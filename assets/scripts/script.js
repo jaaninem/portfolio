@@ -97,6 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let imageIndices = {};
         // the projects currently displayed (swapped when switching galleries)
         let currentProjects = projects;
+        // which gallery file is active; tapping it again is a no-op
+        let activeGalleryFile = galleryList.length > 0 ? galleryList[0].file : null;
         // which info view is open: null, 'about' or 'project'
         let infoMode = null;
         // the element that opened the info view, so focus can return to it
@@ -609,6 +611,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let swipeStartX = 0;
         let swipeStartY = 0;
         let swipeMoved = false;
+        // A gesture that starts in the nav belongs to its controls, not to the
+        // project list. Keeping the flag until touchend stops a stale swipe from
+        // moving the list when a gallery name is tapped.
+        let galleryGestureIgnored = false;
 
         // Wheel event (desktop)
         galleryContainer.addEventListener('wheel', (e) => {
@@ -634,8 +640,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Touch events (mobile) - a swipe always switches exactly one project
         galleryContainer.addEventListener('touchstart', (e) => {
-            if (infoMode) return; // the info text scrolls, it does not swipe projects
-            if (e.target.closest('.gallery-buttons')) return; // let the gallery-name row scroll natively
+            // Anything in the nav (About, gallery names, Back) is its own control.
+            galleryGestureIgnored = !!e.target.closest('#gallery-nav');
+            if (infoMode || galleryGestureIgnored) {
+                swipeMoved = false;
+                return;
+            }
             if (e.touches.length > 0) {
                 swipeStartX = e.touches[0].clientX;
                 swipeStartY = e.touches[0].clientY;
@@ -644,8 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         galleryContainer.addEventListener('touchmove', (e) => {
-            if (infoMode) return;
-            if (e.target.closest('.gallery-buttons')) return; // don't hijack the gallery-name scroll
+            if (infoMode || galleryGestureIgnored) return;
             if (e.touches.length === 0) return;
             const dx = e.touches[0].clientX - swipeStartX;
             const dy = e.touches[0].clientY - swipeStartY;
@@ -659,10 +668,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { passive: false });
 
         galleryContainer.addEventListener('touchend', (e) => {
-            if (infoMode) return;
+            if (infoMode || galleryGestureIgnored) {
+                galleryGestureIgnored = false;
+                swipeMoved = false;
+                return;
+            }
             if (!swipeMoved) return; // a tap: let the title's click select it
             const dx = e.changedTouches[0].clientX - swipeStartX;
             const dy = e.changedTouches[0].clientY - swipeStartY;
+            // Consume the gesture so it cannot leak into the next touch.
+            swipeMoved = false;
             const threshold = 30; // px, minimum distance for a swipe
             // Only vertical, dominant swipes switch projects
             if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > threshold) {
@@ -675,7 +690,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         galleryContainer.addEventListener('touchcancel', () => {
-            // nothing to do; the touch was cancelled
+            galleryGestureIgnored = false;
+            swipeMoved = false;
         });
 
         // Switch to a project by index, clamped to the list bounds. The wheel,
@@ -782,7 +798,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(file);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
-                if (token !== gallerySwitchToken) return;
+                if (token !== gallerySwitchToken) return false;
                 if (!data || !Array.isArray(data)) throw new Error('Invalid gallery data');
 
                 const projects = data.map(project => ({
@@ -801,7 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     fadeFinished(fade),
                     preloadThumbnail(projects[0]?.images?.[0]?.image_path)
                 ]);
-                if (token !== gallerySwitchToken) return;
+                if (token !== gallerySwitchToken) return false;
 
                 currentProjects = projects;
                 renderProjects();
@@ -813,18 +829,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Let the browser paint the new rows before they are revealed.
                 await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                if (token !== gallerySwitchToken) return;
+                if (token !== gallerySwitchToken) return false;
 
                 if (fade) fade.cancel();
                 const fadeIn = switchFade(0, 1, SWITCH_FADE_IN);
                 gallerySwitchAnimation = fadeIn;
                 await fadeFinished(fadeIn);
-                if (token !== gallerySwitchToken) return;
+                if (token !== gallerySwitchToken) return false;
                 if (fadeIn) fadeIn.cancel();
                 gallerySwitchAnimation = null;
+                return true;
             } catch (error) {
-                if (token !== gallerySwitchToken) return;
+                if (token !== gallerySwitchToken) return false;
                 console.error('Error loading gallery:', error);
+                return false;
             } finally {
                 // Only the current switch may restore the wheel; an older one
                 // must not cancel the fade a newer switch has started.
@@ -835,23 +853,87 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        function setActiveGalleryButton(file) {
+            document.querySelectorAll('.gallery-btn').forEach(button => {
+                button.classList.toggle('active', button.dataset.galleryFile === file);
+            });
+        }
+
+        // Selecting the gallery that is already active is a no-op, so a stray
+        // click can never reinitialize the gallery already on screen.
+        function selectGallery(file) {
+            if (!file || file === activeGalleryFile) return;
+            const previous = activeGalleryFile;
+            activeGalleryFile = file;
+            setActiveGalleryButton(file);
+            switchGallery(file).then(ok => {
+                if (ok || activeGalleryFile !== file) return;
+                // The load failed: put the underline back on the gallery that is
+                // still on screen.
+                activeGalleryFile = previous;
+                setActiveGalleryButton(previous);
+            });
+        }
+
+        // iOS Safari can suppress the first click after a swipe. Activate the
+        // gallery from touchend when the finger has not moved, so the tap works
+        // even when no click is generated. The click handler stays for mouse,
+        // keyboard and assistive technology; selectGallery ignores a duplicate.
+        function bindGalleryTap(galleryButtons) {
+            const TAP_SLOP = 8; // px
+            let touched = null;
+            let startX = 0;
+            let startY = 0;
+            let moved = false;
+
+            galleryButtons.addEventListener('touchstart', (event) => {
+                touched = event.touches.length === 1
+                    ? event.target.closest('.gallery-btn')
+                    : null;
+                if (!touched) return;
+                startX = event.touches[0].clientX;
+                startY = event.touches[0].clientY;
+                moved = false;
+            }, { passive: true });
+
+            galleryButtons.addEventListener('touchmove', (event) => {
+                if (!touched || event.touches.length !== 1) return;
+                const dx = event.touches[0].clientX - startX;
+                const dy = event.touches[0].clientY - startY;
+                if (Math.abs(dx) > TAP_SLOP || Math.abs(dy) > TAP_SLOP) moved = true;
+            }, { passive: true });
+
+            galleryButtons.addEventListener('touchend', (event) => {
+                const button = touched;
+                const wasMoved = moved;
+                touched = null;
+                if (!button || wasMoved) return;
+                // The tap is handled here; suppress the synthetic click.
+                event.preventDefault();
+                selectGallery(button.dataset.galleryFile);
+            }, { passive: false });
+
+            galleryButtons.addEventListener('touchcancel', () => {
+                touched = null;
+                moved = false;
+            });
+        }
+
         // Build the gallery-name buttons at the top of the gallery panel
         function buildGalleryButtons() {
             const galleryButtons = document.getElementById('gallery-buttons');
-            galleryList.forEach((gallery, index) => {
+            galleryList.forEach((gallery) => {
                 const btn = document.createElement('button');
                 btn.classList.add('gallery-nav-btn', 'gallery-btn');
+                btn.dataset.galleryFile = gallery.file;
                 btn.textContent = gallery.name;
-                if (index === 0) {
+                if (gallery.file === activeGalleryFile) {
                     btn.classList.add('active');
                 }
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.gallery-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    switchGallery(gallery.file);
-                });
+                btn.addEventListener('click', () => selectGallery(gallery.file));
                 galleryButtons.appendChild(btn);
             });
+            bindGalleryTap(galleryButtons);
         }
 
         // --- Info view -------------------------------------------------

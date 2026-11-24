@@ -128,7 +128,8 @@ These are constants in `assets/scripts/script.js`, not user-facing settings:
 | Image wheel threshold | `100` px | Accumulated wheel distance before a slide change |
 | Image swipe threshold | `50` px | Horizontal swipe distance on the photo |
 | Project swipe threshold | `30` px | Vertical swipe distance on the gallery panel |
-| Tap threshold | `10` px | Below this a touch is a tap, not a swipe |
+| Tap threshold | `10` px | Below this a touch is a tap, not a project swipe |
+| Gallery tap slop | `8` px | Maximum finger movement for a gallery-name tap; larger movements scroll the name row instead |
 | Peek edge inset (`PEEK_EDGE`) | `2` px | Minimum distance between a strip and the panel edge |
 | Peek strip cap (`PEEK_MAX`) | `5` | Maximum thumbnails per side, at every viewport |
 | Peek capacity | measured gutter | Thumbnails that fit beside the photo; at least one per side when a neighbour exists |
